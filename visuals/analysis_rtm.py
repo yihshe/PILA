@@ -23,7 +23,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0831_211338/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -42,7 +42,7 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0831_211338/models/plots')
+                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/plots')
 
 
 
@@ -416,7 +416,7 @@ ATTRS1 = rtm_paras.keys()
 # fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 # ATTRS1 = ['LAI']
 # ATTRS2 = ['cab', 'cw', 'LAIu']
-df = df1
+df = df2
 # df = df1
 df_coniferous = df[df['class'].isin(coniferous)]
 df_deciduous = df[df['class'].isin(deciduous)]
@@ -741,7 +741,7 @@ where p(x) and q(x) are the probability density functions of the two distributio
 """
 # Assuming df2 is your DataFrame, rtm_paras holds parameters, and SAVE_PATH is defined
 ATTRS = list(rtm_paras.keys())
-df = df1
+df = df2
 
 species_list = coniferous + deciduous  # Combine your species lists
 means = {}  # Dictionary to store mean vectors

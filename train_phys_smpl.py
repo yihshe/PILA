@@ -85,7 +85,20 @@ if __name__ == '__main__':
         CustomArgs(['--lr', '--learning_rate'],
                    type=float, target='optimizer;args;lr'),
         CustomArgs(['--bs', '--batch_size'], type=int,
-                   target='data_loader;args;batch_size')
+                   target='data_loader;args;batch_size'),
+        # PhysVAE specific arguments
+        CustomArgs(['--use_kl_term'], type=bool,
+                   target='trainer;phys_vae;use_kl_term'),
+        CustomArgs(['--beta_max'], type=float,
+                   target='trainer;phys_vae;beta_max'),
+        CustomArgs(['--kl_warmup_epochs'], type=int,
+                   target='trainer;phys_vae;kl_warmup_epochs'),
+        CustomArgs(['--epochs_pretrain'], type=int,
+                   target='trainer;phys_vae;epochs_pretrain'),
+        CustomArgs(['--tau_warmup_epochs'], type=int,
+                   target='arch;phys_vae;tau_warmup_epochs'),
+        CustomArgs(['--r_warmup_epochs'], type=int,
+                   target='arch;phys_vae;r_warmup_epochs')
     ]
     config = ConfigParser.from_args(args, options)
 

@@ -34,7 +34,7 @@
             "tau_warmup_epochs": 20,
             "r_init": 0.0,
             "r_final": 1.0,
-            "r_warmup_epochs": 20,
+            "r_warmup_epochs": 30,
             "ortho_penalty_weight": 0.1,
             "coeff_penalty_weight": 1e-4,
             "delta_penalty_weight": 1e-4
@@ -88,7 +88,9 @@
             "kl_warmup_epochs": 50,
             "balance_gate": 0.001,
             "balance_data_aug": 1.0,
-            "balance_residual": 0.001
+            "balance_residual": 0.001,
+            "use_kl_term": true,
+            "beta_max": 1.0
         }
     }
 }

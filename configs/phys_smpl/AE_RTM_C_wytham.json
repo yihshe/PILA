@@ -83,7 +83,9 @@
             "kl_warmup_epochs": 50,
             "balance_gate": 0.001,
             "balance_data_aug": 1.0,
-            "balance_residual": 0.001
+            "balance_residual": 0.001,
+            "use_kl_term": true,
+            "beta_max": 0.1
         }
     }
 }

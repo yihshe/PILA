@@ -12,8 +12,9 @@ NEW METRICS ADDED:
 # Adapted from the training script of Phys-VAE
 import numpy as np
 import torch
+import os
 from torchvision.utils import make_grid
-from base import BaseTrainer
+from base import BaseTrainer, PARENT_DIR
 from utils import inf_loop, MetricTracker, kldiv_normal_normal
 import wandb
 from model.loss import mse_loss, mse_loss_per_channel
@@ -40,6 +41,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
         # CHANGED: minimal knobs
         self.beta_warmup = config['trainer']['phys_vae'].get('kl_warmup_epochs', 50)  # NEW
         self.gate_loss_weight = config['trainer']['phys_vae'].get('balance_gate', 1e-3)  # NEW
+        self.use_kl_term = config['trainer']['phys_vae'].get('use_kl_term', True)  # NEW
+        self.beta_max = config['trainer']['phys_vae'].get('beta_max', 0.1)  # NEW
 
         # for Stage A bootstrap in u-space
         self.synthetic_data_loss_weight = config['trainer']['phys_vae'].get('balance_data_aug', 1.0)
@@ -98,12 +101,12 @@ class PhysVAETrainerSMPL(BaseTrainer):
         
         sequence_len = None
         # Only compute beta when not in pretraining stage
-        if not self.no_phy and epoch >= self.epochs_pretrain:
+        if not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term:
             # FIXED: Beta should start from 0 when training begins
             training_epoch = epoch - self.epochs_pretrain
-            beta = self._linear_annealing_epoch(training_epoch, warmup_epochs=self.beta_warmup)
+            beta = self.beta_max * self._linear_annealing_epoch(training_epoch, warmup_epochs=self.beta_warmup)
         else:
-            beta = 0.0  # No KL loss during pretraining
+            beta = 0.0  # No KL loss during pretraining or when use_kl_term=False
 
         # NEW: accumulators for u-stats
         u_sum = None
@@ -124,7 +127,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
             z_phy_stat, z_aux_stat = self.model.encode(data)
 
             # Draw + decode
-            z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=False)
+            # Use hard_z=True for pure auto-encoder (deterministic), hard_z=False for VAE (stochastic)
+            use_deterministic = not self.use_kl_term  # Use deterministic sampling when KL term is disabled
+            z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
             x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
 
             # Losses
@@ -294,6 +299,35 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
         return log
 
+    def _save_checkpoint(self, epoch, save_best=False):
+        """
+        Override to save tau/r values for inference
+        """
+        arch = type(self.model).__name__
+        
+        # Get current tau/r values
+        tau_r_values = None
+        if not self.no_phy:
+            tau_r_values = self.model.dec.get_current_tau_r(epoch, self.epochs_pretrain)
+        
+        state = {
+            'arch': arch,
+            'epoch': epoch,
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'monitor_best': self.mnt_best,
+            'config': self.config,
+            'tau_r_values': tau_r_values  # Save tau/r values for inference
+        }
+        
+        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        torch.save(state, os.path.join(PARENT_DIR, filename))
+        self.logger.info("Saving checkpoint: {} ...".format(filename))
+        if save_best:
+            best_path = str(self.checkpoint_dir / 'model_best.pth')
+            torch.save(state, os.path.join(PARENT_DIR, best_path))
+            self.logger.info("Saving current best: model_best.pth ...")
+
     def _valid_epoch(self, epoch):
         self.model.eval()
         self.valid_metrics.reset()
@@ -312,7 +346,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
                     # Get full model output to compute residual_loss
                     z_phy_stat, z_aux_stat = self.model.encode(data)
-                    z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=False)
+                    # Use same hard_z setting as training
+                    use_deterministic = not self.use_kl_term
+                    z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
                     x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
                     
                     rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)

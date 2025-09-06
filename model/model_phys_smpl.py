@@ -136,7 +136,33 @@ class Decoders(nn.Module):
             return self.r_init + progress * (self.r_final - self.r_init)
         return self.r_final
     
-    def compute_coefficient(self, z_aux, x_P_det, epoch, epochs_pretrain):
+    def get_current_tau_r(self, epoch, epochs_pretrain):
+        """Get current tau and r values for saving in checkpoint"""
+        return {
+            'tau': self.get_tau(epoch, epochs_pretrain),
+            'r': self.get_r(epoch, epochs_pretrain),
+            'epoch': epoch,
+            'epochs_pretrain': epochs_pretrain
+        }
+    
+    def set_tau_r_from_checkpoint(self, tau_r_dict):
+        """Set tau and r values from checkpoint for inference"""
+        if tau_r_dict is not None:
+            self._inference_tau = tau_r_dict.get('tau', self.tau_final)
+            self._inference_r = tau_r_dict.get('r', self.r_final)
+        else:
+            self._inference_tau = self.tau_final
+            self._inference_r = self.r_final
+    
+    def get_tau_for_inference(self):
+        """Get tau value for inference (uses saved value if available)"""
+        return getattr(self, '_inference_tau', self.tau_final)
+    
+    def get_r_for_inference(self):
+        """Get r value for inference (uses saved value if available)"""
+        return getattr(self, '_inference_r', self.r_final)
+    
+    def compute_coefficient(self, z_aux, x_P_det, epoch, epochs_pretrain, use_inference_values=False):
         """
         IMPROVED: Compute coefficient from [z_aux, x_P_det] with temperature annealing
         c_raw = Linear([z_aux, x_P_det])
@@ -147,7 +173,10 @@ class Decoders(nn.Module):
         c_raw = self.coeff(coeff_input)  # (batch_size, residual_rank)
         
         # Apply temperature annealing (starts after pretraining)
-        tau = self.get_tau(epoch, epochs_pretrain)
+        if use_inference_values:
+            tau = self.get_tau_for_inference()
+        else:
+            tau = self.get_tau(epoch, epochs_pretrain)
         c = torch.tanh(c_raw / tau)  # (batch_size, residual_rank)
         return c
     
@@ -349,7 +378,7 @@ class PHYS_VAE_SMPL(nn.Module):
 
         return z_phy, z_aux  # Return z_aux (unbounded) instead of z_aux
 
-    def decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None):
+    def  decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None, use_inference_values:bool=False):
         """
         CORRECTED: z_aux (unbounded) -> c = tanh(z_aux/tau) -> delta = c@B.T
         x_PB = x_P + r(t) * delta
@@ -359,13 +388,16 @@ class PHYS_VAE_SMPL(nn.Module):
             x_P = y
             if self.dim_z_aux >= 0:
                 # Compute coefficient from z_aux with temperature annealing
-                c = self.dec.compute_coefficient(z_aux, x_P.detach(), epoch, epochs_pretrain)
+                c = self.dec.compute_coefficient(z_aux, x_P.detach(), epoch, epochs_pretrain, use_inference_values)
                 
                 # Compute low-rank residual: delta = (c * s) @ B.T
                 delta = torch.matmul(c * self.dec.s, self.dec.B.T)
                 
                 # Apply global residual scale warmup (starts after pretraining)
-                r = self.dec.get_r(epoch, epochs_pretrain)
+                if use_inference_values:
+                    r = self.dec.get_r_for_inference()
+                else:
+                    r = self.dec.get_r(epoch, epochs_pretrain)
                 x_PB = x_P + r * delta
             else:
                 x_PB = x_P.clone()
@@ -395,9 +427,9 @@ class PHYS_VAE_SMPL(nn.Module):
         
         if not inference:
             x_mean = self.decode(*self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z), 
-                               epoch=epoch, epochs_pretrain=epochs_pretrain, full=False, const=const)
+                               epoch=epoch, epochs_pretrain=epochs_pretrain, full=False, const=const, use_inference_values=False)
             return z_phy_stat, z_aux_stat, x_mean
         else:
             z_phy, z_aux = self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z)
-            x_PB, x_P, _y, _delta, _c = self.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=epochs_pretrain, full=True, const=const)
+            x_PB, x_P, _y, _delta, _c = self.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=epochs_pretrain, full=True, const=const, use_inference_values=True)
             return z_phy, z_aux, x_PB, x_P  # keep 4-tuple for existing test code

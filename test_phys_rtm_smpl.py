@@ -12,42 +12,85 @@ import numpy as np
 # from physics.rtm.rtm import RTM
 
 import os
+import logging
+from datetime import datetime
+from pathlib import Path
+from utils import read_json
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def setup_test_logging(checkpoint_path):
+    """
+    Setup logging to save test logs in the checkpoint's directory
+    """
+    checkpoint_path = Path(checkpoint_path)
+    # Get the log directory from the checkpoint path
+    # checkpoint is in models/ subdirectory, so go up one level to get the experiment directory
+    experiment_dir = checkpoint_path.parent.parent
+    log_dir = experiment_dir / 'log'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create timestamped log file name
+    timestamp = datetime.now().strftime('%m%d_%H%M%S')
+    log_filename = f'info_test_{timestamp}.log'
+    log_file_path = log_dir / log_filename
+    
+    # Setup logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file_path),
+            logging.StreamHandler()  # Also log to console
+        ]
+    )
+    
+    logger = logging.getLogger('test')
+    logger.info(f"Test logging setup. Log file: {log_file_path}")
+    return logger
+
 def main(config, args: argparse.Namespace):
-    logger = config.get_logger('test')
+    # Setup custom logging for test
+    logger = setup_test_logging(args.resume)
 
     if args.insitu:
-        data_dir_test = config['data_loader']['data_dir_test'].replace('test.csv', 'test_frm4veg.csv')
+        data_dir_test = config.config['data_loader']['data_dir_test'].replace('test.csv', 'test_frm4veg.csv')
     else:
-        data_dir_test = config['data_loader']['data_dir_test']
+        data_dir_test = config.config['data_loader']['data_dir_test']
     # setup data_loader instances
-    data_loader = getattr(module_data, config['data_loader']['type'])(
+    data_loader = getattr(module_data, config.config['data_loader']['type'])(
         data_dir = data_dir_test,
         batch_size=512,
         shuffle=False,
         validation_split=0.0,
         num_workers=0,
-        with_const=config['data_loader']['args']['with_const'] if 'with_const' in config['data_loader']['args'] else False
+        with_const=config.config['data_loader']['args']['with_const'] if 'with_const' in config.config['data_loader']['args'] else False
     )
 
     # build model architecture
     # model = config.init_obj('arch', module_arch)
     # model = model_init(config)
-    model = PHYS_VAE_SMPL(config)
+    model = PHYS_VAE_SMPL(config.config)
     logger.info(model)
 
     # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config['loss'])
-    metric_fns = [getattr(module_metric, met) for met in config['metrics']]
+    loss_fn = getattr(module_loss, config.config['loss'])
+    metric_fns = [getattr(module_metric, met) for met in config.config['metrics']]
 
     logger.info('Loading checkpoint: {} ...'.format(config.resume))
     checkpoint = torch.load(os.path.join(CURRENT_DIR, config.resume))
     state_dict = checkpoint['state_dict']
-    if config['n_gpu'] > 1:
+    if config.config['n_gpu'] > 1:
         model = torch.nn.DataParallel(model)
     model.load_state_dict(state_dict)
+    
+    # Load tau/r values for inference if available
+    tau_r_values = checkpoint.get('tau_r_values', None)
+    if tau_r_values is not None and not no_phy:
+        model.dec.set_tau_r_from_checkpoint(tau_r_values)
+        logger.info(f"Loaded tau/r values from checkpoint: tau={tau_r_values['tau']:.3f}, r={tau_r_values['r']:.3f}")
+    else:
+        logger.info("Using default tau/r values for inference")
 
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,14 +100,14 @@ def main(config, args: argparse.Namespace):
     total_loss = 0.0
     total_metrics = torch.zeros(len(metric_fns))
 
-    data_key = config['trainer']['input_key']
-    target_key = config['trainer']['output_key']
-    if 'input_const_keys' in config['trainer']:
-        input_const_keys = config['trainer']['input_const_keys']
+    data_key = config.config['trainer']['input_key']
+    target_key = config.config['trainer']['output_key']
+    if 'input_const_keys' in config.config['trainer']:
+        input_const_keys = config.config['trainer']['input_const_keys']
     else:
         input_const_keys = None
-    no_phy = config['arch']['phys_vae']['no_phy']
-    dim_z_aux = config['arch']['phys_vae']['dim_z_aux']
+    no_phy = config.config['arch']['phys_vae']['no_phy']
+    dim_z_aux = config.config['arch']['phys_vae']['dim_z_aux']
 
     if not no_phy:
         ATTRS = ['N', 'cab', 'cw', 'cm', 'LAI', 'LAIu', 'fc', 'cd', 'h']
@@ -87,22 +130,28 @@ def main(config, args: argparse.Namespace):
                 input_const = {k: data_dict[k].to(device) for k in input_const_keys}
             else:
                 input_const = None
-            # forward pass NOTE hard_z is True is KL term is not used
-            latent_phy, latent_aux, output, init_output = model(data, inference=True, hard_z=False, const=input_const)
+            # forward pass 
+            # Determine hard_z based on whether KL term was used during training
+            # Check if model was trained with KL term by looking at config
+            use_kl_term = config.config['trainer']['phys_vae'].get('use_kl_term', True)
+            use_deterministic = not use_kl_term  # Use deterministic sampling when KL term was disabled
+            
+            # Model returns: z_phy, z_aux, x_PB (physics+bias), x_P (raw physics)
+            latent_phy, latent_aux, x_PB, x_P = model(data, inference=True, hard_z=use_deterministic, const=input_const)
 
             if not no_phy:
                 latent_phy = model.physics_model.rescale(latent_phy)
                 latent = torch.stack([latent_phy[k] for k in latent_phy.keys()], dim=1)
                 bias = None
                 if dim_z_aux >= 0:#TODO in ablation, it is possible that dim_z_aux=-1 but the model still has the bias correction
-                    bias = output - init_output
-                    data_concat(analyzer, 'init_output', init_output)
+                    bias = x_PB - x_P  # bias = corrected output - raw physics output
+                    data_concat(analyzer, 'init_output', x_P)  # raw physics output
                     data_concat(analyzer, 'bias', bias)
                     data_concat(analyzer, 'latent_aux', latent_aux)
             else:
                 latent = latent_aux
 
-            data_concat(analyzer, 'output', output)
+            data_concat(analyzer, 'output', x_PB)  # corrected output (physics + bias)
             data_concat(analyzer, 'target', target)
             data_concat(analyzer, 'latent', latent)
             data_concat(analyzer, 'sample_id', data_dict['sample_id'])
@@ -111,11 +160,11 @@ def main(config, args: argparse.Namespace):
             # NOTE this MSE loss given by PyTorch is element-wise, but for Phys-VAE, it is sample-wise torch.sum((output-target)**2, dim=1).mean()
             # NOTE the way how the loss is computed in MAGIC also need to be double-checked
             # computing loss, metrics on test set
-            loss = loss_fn(output, target) 
+            loss = loss_fn(x_PB, target)  # Use corrected output for loss calculation 
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
             for i, metric in enumerate(metric_fns):
-                total_metrics[i] += metric(output, target) * batch_size
+                total_metrics[i] += metric(x_PB, target) * batch_size  # Use corrected output for metrics
 
     n_samples = len(data_loader.sampler)
     log = {'loss': total_loss / n_samples}
@@ -177,6 +226,32 @@ def data_concat(analyzer: dict, key: str, data):
         analyzer[key] = analyzer[key] + data
 
 
+class TestConfigParser:
+    """
+    Custom config parser for testing that doesn't create new experiment directories
+    """
+    def __init__(self, config_dict, resume_path):
+        self._config = config_dict
+        self.resume = resume_path
+        # Don't create new directories for testing
+    
+    @classmethod
+    def from_args(cls, args):
+        """Initialize from command line arguments"""
+        if args.resume is not None:
+            resume = Path(args.resume)
+            cfg_fname = resume.parent / 'config.json'
+        else:
+            msg_no_cfg = "Resume path need to be specified for testing."
+            assert args.resume is not None, msg_no_cfg
+        
+        config = read_json(cfg_fname)
+        return cls(config, args.resume)
+    
+    @property
+    def config(self):
+        return self._config
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Template')
     parser.add_argument('-c', '--config', default=None, type=str,
@@ -188,8 +263,8 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--insitu', action='store_true', 
                         help='use insitu data (default: False)')
 
-    # args.add_argument('-a', '--analyze', default=False, type=bool,
-    #                   help='analyze and saved the test results (default: False)')
-    config = ConfigParser.from_args(parser)
     args = parser.parse_args()
+    
+    # Use custom config parser for testing
+    config = TestConfigParser.from_args(args)
     main(config, args)
