@@ -23,7 +23,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0910_135253_pretrain0_kl0_Xp_trackable/models/model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -35,14 +35,14 @@ CSV_PATH2 = os.path.join(
 #     BASE_PATH, 'AE_RTM_corr_con/0201_201257/model_best_testset_analyzer.csv')
 
 SAVE_PATH = os.path.join(BASE_PATH, 
-                        #  'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots')
+                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/plots')
+                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0910_135253_pretrain0_kl0_Xp_trackable/models/plots')
 
 
 
@@ -566,14 +566,15 @@ df = df2
 # color = 'red'
 color = 'blue'
 label = '$X_{\mathrm{S2, B}}$' 
+token = 'output'
 for i, band in enumerate(S2_BANDS):
     ax = axs[i//4, i % 4]
-    sns.scatterplot(x='target_'+band, y='output_'+band, data=df, ax=ax,
+    sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
                     s=8, alpha=0.5, color=color, label=label)
     # adjust the point size and alpha and color
     # calculate RMSE and add it to the title
     # rmse = np.sqrt(np.mean((df[f'target_{band}'] - df[f'output_{band}'])**2))
-    r2 = r_square(df[f'target_{band}'], df[f'output_{band}'])
+    r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
     fontsize = 30
     # add the RMSE to the title
     ax.set_title(S2_names[band], fontsize=fontsize)
@@ -608,7 +609,7 @@ for i, band in enumerate(S2_BANDS):
 # make the last subplot empty
 axs[-1, -1].axis('off')
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'linescatter_realset_bands_corr_target_v_output.png'))
+plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_corr_target_v_{token}.png'))
 plt.show()
 
 # %% NOTE neurips changed

@@ -86,8 +86,8 @@ if __name__ == '__main__':
                    type=float, target='optimizer;args;lr'),
         CustomArgs(['--bs', '--batch_size'], type=int,
                    target='data_loader;args;batch_size'),
-        # PhysVAE specific arguments
-        CustomArgs(['--use_kl_term'], type=bool,
+        # PhysVAE specific arguments TODO a more elegant way to do this, currently it is hardcoded in parse_config.py
+        CustomArgs(['--use_kl_term'], type=str,
                    target='trainer;phys_vae;use_kl_term'),
         CustomArgs(['--beta_max'], type=float,
                    target='trainer;phys_vae;beta_max'),
@@ -97,10 +97,35 @@ if __name__ == '__main__':
                    target='trainer;phys_vae;epochs_pretrain'),
         CustomArgs(['--tau_warmup_epochs'], type=int,
                    target='arch;phys_vae;tau_warmup_epochs'),
+        CustomArgs(['--tau_init'], type=float,
+                   target='arch;phys_vae;tau_init'),
         CustomArgs(['--r_warmup_epochs'], type=int,
-                   target='arch;phys_vae;r_warmup_epochs')
+                   target='arch;phys_vae;r_warmup_epochs'),
+        CustomArgs(['--r_init'], type=float,
+                   target='arch;phys_vae;r_init'),
+        CustomArgs(['--dim_z_aux'], type=int,
+                   target='arch;phys_vae;dim_z_aux'),
+        CustomArgs(['--detach_x_P_for_bias'], type=str,
+                   target='arch;phys_vae;detach_x_P_for_bias'),
+        # NEW: Capacity control arguments
+        CustomArgs(['--use_capacity_control'], type=str,
+                   target='trainer;phys_vae;use_capacity_control'),
+        CustomArgs(['--C_max'], type=float,
+                   target='trainer;phys_vae;C_max'),
+        CustomArgs(['--C_gamma'], type=float,
+                   target='trainer;phys_vae;C_gamma'),
+        CustomArgs(['--beta_aux'], type=float,
+                   target='trainer;phys_vae;beta_aux')
     ]
     config = ConfigParser.from_args(args, options)
+    
+    # Debug: Print updated config values
+    print(f"Updated config values:")
+    print(f"  use_kl_term: {config.config['trainer']['phys_vae'].get('use_kl_term', 'NOT_SET')}")
+    print(f"  beta_max: {config.config['trainer']['phys_vae'].get('beta_max', 'NOT_SET')}")
+    print(f"  kl_warmup_epochs: {config.config['trainer']['phys_vae'].get('kl_warmup_epochs', 'NOT_SET')}")
+    print(f"  epochs_pretrain: {config.config['trainer']['phys_vae'].get('epochs_pretrain', 'NOT_SET')}")
+    print(f"  detach_x_P_for_bias: {config.config['arch']['phys_vae'].get('detach_x_P_for_bias', 'NOT_SET')}")
 
     wandb.init(
         project="PhysVAE_SMPL_RTM",

@@ -297,6 +297,7 @@ class PHYS_VAE_SMPL(nn.Module):
         self.dim_z_phy = config['arch']['phys_vae']['dim_z_phy']
         self.activation = config['arch']['phys_vae']['activation']
         self.in_channels = config['arch']['args']['input_dim']
+        self.detach_x_P_for_bias = config['arch']['phys_vae'].get('detach_x_P_for_bias', True)
 
         # Encoding part
         self.enc = Encoders(config)
@@ -378,7 +379,7 @@ class PHYS_VAE_SMPL(nn.Module):
 
         return z_phy, z_aux  # Return z_aux (unbounded) instead of z_aux
 
-    def  decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None, use_inference_values:bool=False):
+    def  decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None, use_inference_values:bool=False, detach_x_P_for_bias:bool=True):
         """
         CORRECTED: z_aux (unbounded) -> c = tanh(z_aux/tau) -> delta = c@B.T
         x_PB = x_P + r(t) * delta
@@ -388,7 +389,8 @@ class PHYS_VAE_SMPL(nn.Module):
             x_P = y
             if self.dim_z_aux >= 0:
                 # Compute coefficient from z_aux with temperature annealing
-                c = self.dec.compute_coefficient(z_aux, x_P.detach(), epoch, epochs_pretrain, use_inference_values)
+                x_P_input = x_P.detach() if detach_x_P_for_bias else x_P
+                c = self.dec.compute_coefficient(z_aux, x_P_input, epoch, epochs_pretrain, use_inference_values)
                 
                 # Compute low-rank residual: delta = (c * s) @ B.T
                 delta = torch.matmul(c * self.dec.s, self.dec.B.T)
@@ -427,9 +429,9 @@ class PHYS_VAE_SMPL(nn.Module):
         
         if not inference:
             x_mean = self.decode(*self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z), 
-                               epoch=epoch, epochs_pretrain=epochs_pretrain, full=False, const=const, use_inference_values=False)
+                               epoch=epoch, epochs_pretrain=epochs_pretrain, full=False, const=const, use_inference_values=False, detach_x_P_for_bias=self.detach_x_P_for_bias)
             return z_phy_stat, z_aux_stat, x_mean
         else:
             z_phy, z_aux = self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z)
-            x_PB, x_P, _y, _delta, _c = self.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=epochs_pretrain, full=True, const=const, use_inference_values=True)
+            x_PB, x_P, _y, _delta, _c = self.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=epochs_pretrain, full=True, const=const, use_inference_values=True, detach_x_P_for_bias=self.detach_x_P_for_bias)
             return z_phy, z_aux, x_PB, x_P  # keep 4-tuple for existing test code

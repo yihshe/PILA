@@ -37,7 +37,8 @@
             "r_warmup_epochs": 30,
             "ortho_penalty_weight": 0.1,
             "coeff_penalty_weight": 1e-4,
-            "delta_penalty_weight": 1e-4
+            "delta_penalty_weight": 1e-4,
+            "detach_x_P_for_bias": true
         }
     },
     "data_loader": {

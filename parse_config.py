@@ -142,6 +142,13 @@ def _update_config(config, modification):
 
     for k, v in modification.items():
         if v is not None:
+            # Handle boolean string conversion
+            if k == 'trainer;phys_vae;use_kl_term':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'arch;phys_vae;detach_x_P_for_bias':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
             _set_by_path(config, k, v)
     return config
 

@@ -84,6 +84,10 @@ def main(config, args: argparse.Namespace):
         model = torch.nn.DataParallel(model)
     model.load_state_dict(state_dict)
     
+    # Get config values first
+    no_phy = config.config['arch']['phys_vae']['no_phy']
+    dim_z_aux = config.config['arch']['phys_vae']['dim_z_aux']
+    
     # Load tau/r values for inference if available
     tau_r_values = checkpoint.get('tau_r_values', None)
     if tau_r_values is not None and not no_phy:

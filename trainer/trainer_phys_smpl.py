@@ -43,6 +43,12 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.gate_loss_weight = config['trainer']['phys_vae'].get('balance_gate', 1e-3)  # NEW
         self.use_kl_term = config['trainer']['phys_vae'].get('use_kl_term', True)  # NEW
         self.beta_max = config['trainer']['phys_vae'].get('beta_max', 0.1)  # NEW
+        
+        # NEW: Capacity control parameters
+        self.use_capacity_control = config['trainer']['phys_vae'].get('use_capacity_control', False)  # NEW
+        self.C_max = config['trainer']['phys_vae'].get('C_max', float(self.dim_z_phy))  # e.g., 7.0 for RTM
+        self.C_gamma = config['trainer']['phys_vae'].get('C_gamma', 10.0)  # Capacity penalty weight
+        self.beta_aux = config['trainer']['phys_vae'].get('beta_aux', 1.0)  # Auxiliary KL weight
 
         # for Stage A bootstrap in u-space
         self.synthetic_data_loss_weight = config['trainer']['phys_vae'].get('balance_data_aug', 1.0)
@@ -68,6 +74,11 @@ class PhysVAETrainerSMPL(BaseTrainer):
             'delta_norm',  # norm of residual vector
             's_norm',  # norm of scale parameters
             'basis_quality',  # ||B^T B - I||_F
+            # NEW: Capacity control metrics
+            'kl_u_phy',  # Physics KL in u-space
+            'kl_z_aux',  # Auxiliary KL
+            'capacity_target',  # Current capacity target C_t
+            'capacity_penalty',  # Capacity penalty term
             *[m.__name__ for m in metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('rec_loss', 'kl_loss', 'residual_loss', 'residual_rel_diff', *[m.__name__ for m in metric_ftns], writer=self.writer)
 
@@ -132,8 +143,15 @@ class PhysVAETrainerSMPL(BaseTrainer):
             z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
             x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
 
-            # Losses
-            rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+            # Losses - Choose between standard and capacity-controlled VAE loss
+            if self.use_capacity_control:
+                rec_loss, kl_u_phy, kl_z_aux = self._vae_loss_capacity(data, z_phy_stat, z_aux_stat, x_PB)
+                # For backward compatibility, compute combined KL loss
+                kl_loss = kl_u_phy + kl_z_aux
+            else:
+                rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+                kl_u_phy = kl_loss  # For metrics tracking
+                kl_z_aux = torch.tensor(0.0, device=data.device)
 
             # Compute L2 difference between raw physics output and corrected output
             residual_loss = torch.sum((x_PB - x_P).pow(2), dim=1).mean()
@@ -159,12 +177,32 @@ class PhysVAETrainerSMPL(BaseTrainer):
             if not self.no_phy and epoch < self.epochs_pretrain:
                 synthetic_data_loss = self._synthetic_data_loss(data.shape[0])
                 loss = self.synthetic_data_loss_weight * synthetic_data_loss
+                # Initialize capacity control variables for metrics
+                capacity_penalty = torch.tensor(0.0, device=data.device)
+                C_t = 0.0
             else:
-                # IMPROVED: Complete loss function
-                loss = (rec_loss + beta * kl_loss + 
-                       self.ortho_penalty_weight * ortho_penalty +
-                       self.coeff_penalty_weight * coeff_penalty +
-                       self.delta_penalty_weight * delta_penalty)
+                # IMPROVED: Complete loss function with capacity control
+                if self.use_capacity_control and not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term:
+                    # --- Capacity control for physics KL (post-pretrain only) ---
+                    training_epoch = epoch - self.epochs_pretrain
+                    warm = max(1, self.beta_warmup)  # your existing warmup (e.g., 50)
+                    
+                    C_t = min(self.C_max, self.C_max * training_epoch / warm)   # 0 -> C_max
+                    capacity_penalty = self.C_gamma * (kl_u_phy - C_t)**2
+                else:
+                    C_t = 0.0
+                    capacity_penalty = torch.tensor(0.0, device=data.device)
+                
+                # --- Auxiliary KL stays simple ---
+                aux_term = self.beta_aux * kl_z_aux
+                
+                # --- Final loss ---
+                loss = (rec_loss
+                        + capacity_penalty
+                        + aux_term
+                        + self.ortho_penalty_weight * ortho_penalty
+                        + self.coeff_penalty_weight * coeff_penalty
+                        + self.delta_penalty_weight * delta_penalty)
 
             loss.backward()
 
@@ -183,6 +221,12 @@ class PhysVAETrainerSMPL(BaseTrainer):
             self.train_metrics.update('kl_loss', kl_loss.item())
             self.train_metrics.update('residual_loss', residual_loss.item())
             self.train_metrics.update('residual_rel_diff', residual_rel_diff.item())
+            
+            # NEW: Update capacity control metrics
+            self.train_metrics.update('kl_u_phy', kl_u_phy.item())
+            self.train_metrics.update('kl_z_aux', kl_z_aux.item())
+            self.train_metrics.update('capacity_target', C_t)
+            self.train_metrics.update('capacity_penalty', capacity_penalty.item())
             
             if not self.no_phy and epoch < self.epochs_pretrain:
                 self.train_metrics.update('syn_data_loss', synthetic_data_loss.item())
@@ -216,11 +260,19 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
             # Logging
             if batch_idx % self.config['trainer']['log_step'] == 0:
-                log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
-                          f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
-                          f"KL(beta={beta:.3f}) {kl_loss.item():.6f} "
-                          f"Residual {residual_loss.item():.6f} "
-                          f"residual_rel_diff {residual_rel_diff.item():.2f}%")
+                if self.use_capacity_control:
+                    log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
+                              f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
+                              f"KL_u {kl_u_phy.item():.6f} KL_aux {kl_z_aux.item():.6f} "
+                              f"C_t {C_t:.3f} Cap_pen {capacity_penalty.item():.6f} "
+                              f"Residual {residual_loss.item():.6f} "
+                              f"residual_rel_diff {residual_rel_diff.item():.2f}%")
+                else:
+                    log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
+                              f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
+                              f"KL(beta={beta:.3f}) {kl_loss.item():.6f} "
+                              f"Residual {residual_loss.item():.6f} "
+                              f"residual_rel_diff {residual_rel_diff.item():.2f}%")
                 
                 if not self.no_phy and epoch >= self.epochs_pretrain:
                     log_str += f" Ortho {ortho_penalty.item():.6f} Coeff {coeff_penalty.item():.6f} Delta {delta_penalty.item():.6f}"
@@ -232,13 +284,25 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
         # Log epoch summary including residual_loss and current learning rate
         current_lr = self.optimizer.param_groups[0]['lr']
-        summary_str = (f"Epoch {epoch} Summary - "
-                      f"Loss: {log['loss']:.6f}, "
-                      f"Rec: {log['rec_loss']:.6f}, "
-                      f"KL: {log['kl_loss']:.6f}, "
-                      f"Residual: {log['residual_loss']:.6f}, "
-                      f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
-                      f"LR: {current_lr:.6f}")
+        if self.use_capacity_control:
+            summary_str = (f"Epoch {epoch} Summary - "
+                          f"Loss: {log['loss']:.6f}, "
+                          f"Rec: {log['rec_loss']:.6f}, "
+                          f"KL_u: {log['kl_u_phy']:.6f}, "
+                          f"KL_aux: {log['kl_z_aux']:.6f}, "
+                          f"C_t: {log['capacity_target']:.3f}, "
+                          f"Cap_pen: {log['capacity_penalty']:.6f}, "
+                          f"Residual: {log['residual_loss']:.6f}, "
+                          f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
+                          f"LR: {current_lr:.6f}")
+        else:
+            summary_str = (f"Epoch {epoch} Summary - "
+                          f"Loss: {log['loss']:.6f}, "
+                          f"Rec: {log['rec_loss']:.6f}, "
+                          f"KL: {log['kl_loss']:.6f}, "
+                          f"Residual: {log['residual_loss']:.6f}, "
+                          f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
+                          f"LR: {current_lr:.6f}")
         
         # Add r(t) and tau monitoring
         if not self.no_phy:
@@ -351,7 +415,12 @@ class PhysVAETrainerSMPL(BaseTrainer):
                     z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
                     x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
                     
-                    rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+                    # Use same loss function as training for consistency
+                    if self.use_capacity_control:
+                        rec_loss, kl_u_phy, kl_z_aux = self._vae_loss_capacity(data, z_phy_stat, z_aux_stat, x_PB)
+                        kl_loss = kl_u_phy + kl_z_aux  # For backward compatibility
+                    else:
+                        rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
                     
                     # Compute residual_loss for validation (L2 difference)
                     residual_loss = torch.sum((x_PB - x_P).pow(2), dim=1).mean()
@@ -403,6 +472,37 @@ class PhysVAETrainerSMPL(BaseTrainer):
         
         kl_loss = (KL_u_phy + KL_z_aux).mean()
         return rec_loss, kl_loss
+
+    def _vae_loss_capacity(self, data, z_phy_stat, z_aux_stat, x, pretrain=False):
+        """
+        NEW: Capacity-controlled VAE loss with separate physics and auxiliary KL terms.
+        Returns: rec_loss, KL_u_phy, KL_z_aux (separate terms for capacity control)
+        """
+        rec_loss = torch.sum((x - data).pow(2), dim=1).mean()
+
+        n = data.shape[0]
+        prior_u_phy_stat, prior_z_aux_stat = self.model.priors(n, self.device)
+
+        # --- Physics KL in u-space (total scalar, batch-avg) ---
+        if not self.no_phy:
+            KL_u_phy = kldiv_normal_normal(
+                z_phy_stat['mean'], z_phy_stat['lnvar'],
+                prior_u_phy_stat['mean'], prior_u_phy_stat['lnvar']
+            ).mean()     # scalar
+        else:
+            KL_u_phy = torch.zeros(1, device=self.device)
+
+        # --- Auxiliary KL (unchanged) ---
+        if pretrain or self.config['arch']['phys_vae']['dim_z_aux'] == 0:
+            KL_z_aux = torch.zeros(1, device=self.device)
+        else:
+            KL_z_aux = kldiv_normal_normal(
+                z_aux_stat['mean'], z_aux_stat['lnvar'],
+                prior_z_aux_stat['mean'], prior_z_aux_stat['lnvar']
+            ).mean()
+
+        # Return separate KLs (no mixing)
+        return rec_loss, KL_u_phy, KL_z_aux
 
     def _synthetic_data_loss(self, batch_size):
         """

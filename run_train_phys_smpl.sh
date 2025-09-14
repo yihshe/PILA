@@ -10,19 +10,36 @@ echo "Using Python: $PYTHON_CMD"
 # Train AE_RTM_C (encoder being replaced with RTM + correction layer)
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_wytham.json
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 1.0
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 1.0
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.5
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.5
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1 --epochs_pretrain 20
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1 --epochs_pretrain 20
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1 --epochs_pretrain 0
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1 --epochs_pretrain 0
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.01
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.01 --epochs_pretrain 20
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 20
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.01 --epochs_pretrain 0
 
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 0
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 20
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 0
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 0 --r_init 1.0
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 0 --r_init 1.0 --tau_init 1.0
+
+
+#---------------CAPACITY CONTROL EXPERIMENTS-----------------
+# Test capacity control with sensible defaults
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json
+
+# Test capacity control with higher capacity target
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json --use_capacity_control true --C_max 10.0 
+
+# Test capacity control with custom parameters
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json --use_capacity_control true --C_max 3.0 
 
 #---------------ABLATION STUDIES-----------------
 # Pure auto-encoder (no KL term):
@@ -37,10 +54,13 @@ $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json 
 # Custom pretraining:
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --epochs_pretrain 10
 
+# Control gradient flow for bias correction:
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --detach_x_P_for_bias false
+
 # Alternative: Test the trained model
-# $PYTHON_CMD -m pdb test_phys_rtm_smpl.py \
-#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/config.json \
-#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0905_131852/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0906_155302/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0906_155302/models/model_best.pth \
 #         # --insitu
 
 # #---------------ALL EXPERIMENTS-----------------
