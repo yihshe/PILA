@@ -23,7 +23,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0910_135253_pretrain0_kl0_Xp_trackable/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_203537_Cmax10/models/model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -42,7 +42,7 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0910_135253_pretrain0_kl0_Xp_trackable/models/plots')
+                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_203537_Cmax10/models/plots')
 
 
 
@@ -566,7 +566,7 @@ df = df2
 # color = 'red'
 color = 'blue'
 label = '$X_{\mathrm{S2, B}}$' 
-token = 'output'
+token = 'init_output'
 for i, band in enumerate(S2_BANDS):
     ax = axs[i//4, i % 4]
     sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,

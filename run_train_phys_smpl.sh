@@ -31,15 +31,17 @@ echo "Using Python: $PYTHON_CMD"
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term false --epochs_pretrain 0 --r_init 1.0 --tau_init 1.0
 
 
+#---------------ORIGINAL EXPERIMENTS (NO CAPACITY CONTROL)-----------------
+# Original VAE with standard KL loss
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1
+
+# # Original VAE with different beta values
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.01
+
 #---------------CAPACITY CONTROL EXPERIMENTS-----------------
 # Test capacity control with sensible defaults
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json
+$PYTHON_CMD -m pdb train_phys_smpl.py --config configs/phys_smpl/AE_RTM_C_austria.json --use_capacity_control true --C_max 7.0 --C_gamma 10.0 --beta_aux 0.5
 
-# Test capacity control with higher capacity target
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json --use_capacity_control true --C_max 10.0 
-
-# Test capacity control with custom parameters
-$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capacity.json --use_capacity_control true --C_max 3.0 
 
 #---------------ABLATION STUDIES-----------------
 # Pure auto-encoder (no KL term):
@@ -59,9 +61,9 @@ $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria_capac
 
 # Alternative: Test the trained model
 # $PYTHON_CMD -m test_phys_rtm_smpl \
-#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0906_155302/models/config.json \
-#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0906_155302/models/model_best.pth \
-#         # --insitu
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_223959_Cmax3/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_223959_Cmax3/models/model_best.pth \
+        # --insitu
 
 # #---------------ALL EXPERIMENTS-----------------
 # # Run Wytham RTM experiments

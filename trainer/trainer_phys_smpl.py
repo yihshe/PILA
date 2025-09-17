@@ -44,8 +44,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.use_kl_term = config['trainer']['phys_vae'].get('use_kl_term', True)  # NEW
         self.beta_max = config['trainer']['phys_vae'].get('beta_max', 0.1)  # NEW
         
-        # NEW: Capacity control parameters
-        self.use_capacity_control = config['trainer']['phys_vae'].get('use_capacity_control', False)  # NEW
+        # ========================================================================
+        # CAPACITY CONTROL MODULE (Optional add-on to original implementation)
+        # ========================================================================
+        self.use_capacity_control = config['trainer']['phys_vae'].get('use_capacity_control', False)
         self.C_max = config['trainer']['phys_vae'].get('C_max', float(self.dim_z_phy))  # e.g., 7.0 for RTM
         self.C_gamma = config['trainer']['phys_vae'].get('C_gamma', 10.0)  # Capacity penalty weight
         self.beta_aux = config['trainer']['phys_vae'].get('beta_aux', 1.0)  # Auxiliary KL weight
@@ -143,15 +145,14 @@ class PhysVAETrainerSMPL(BaseTrainer):
             z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
             x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
 
-            # Losses - Choose between standard and capacity-controlled VAE loss
-            if self.use_capacity_control:
-                rec_loss, kl_u_phy, kl_z_aux = self._vae_loss_capacity(data, z_phy_stat, z_aux_stat, x_PB)
-                # For backward compatibility, compute combined KL loss
-                kl_loss = kl_u_phy + kl_z_aux
-            else:
-                rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
-                kl_u_phy = kl_loss  # For metrics tracking
-                kl_z_aux = torch.tensor(0.0, device=data.device)
+            # Losses - Get separate KL terms for flexible combination
+            rec_loss, kl_u_phy, kl_z_aux = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+            
+            # ========================================================================
+            # KL LOSS COMBINATION: Choose between original and capacity control modes
+            # ========================================================================
+            # Original mode: Combine KL terms first, then average (exactly as before)
+            kl_loss = kl_u_phy + kl_z_aux
 
             # Compute L2 difference between raw physics output and corrected output
             residual_loss = torch.sum((x_PB - x_P).pow(2), dim=1).mean()
@@ -181,28 +182,38 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 capacity_penalty = torch.tensor(0.0, device=data.device)
                 C_t = 0.0
             else:
-                # IMPROVED: Complete loss function with capacity control
+                # ========================================================================
+                # LOSS CALCULATION: Choose between original and capacity control modes
+                # ========================================================================
                 if self.use_capacity_control and not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term:
-                    # --- Capacity control for physics KL (post-pretrain only) ---
+                    # --- CAPACITY CONTROL MODE ---
                     training_epoch = epoch - self.epochs_pretrain
                     warm = max(1, self.beta_warmup)  # your existing warmup (e.g., 50)
                     
                     C_t = min(self.C_max, self.C_max * training_epoch / warm)   # 0 -> C_max
                     capacity_penalty = self.C_gamma * (kl_u_phy - C_t)**2
+                    
+                    # Auxiliary KL stays simple
+                    aux_term = self.beta_aux * kl_z_aux
+                    
+                    # Capacity control loss
+                    loss = (rec_loss
+                            + capacity_penalty
+                            + aux_term
+                            + self.ortho_penalty_weight * ortho_penalty
+                            + self.coeff_penalty_weight * coeff_penalty
+                            + self.delta_penalty_weight * delta_penalty)
                 else:
+                    # --- ORIGINAL MODE ---
+                    # Original loss function (preserved exactly as before)
+                    loss = (rec_loss + beta * kl_loss + 
+                           self.ortho_penalty_weight * ortho_penalty +
+                           self.coeff_penalty_weight * coeff_penalty +
+                           self.delta_penalty_weight * delta_penalty)
+                    
+                    # Initialize capacity control variables for metrics (when not using capacity control)
                     C_t = 0.0
                     capacity_penalty = torch.tensor(0.0, device=data.device)
-                
-                # --- Auxiliary KL stays simple ---
-                aux_term = self.beta_aux * kl_z_aux
-                
-                # --- Final loss ---
-                loss = (rec_loss
-                        + capacity_penalty
-                        + aux_term
-                        + self.ortho_penalty_weight * ortho_penalty
-                        + self.coeff_penalty_weight * coeff_penalty
-                        + self.delta_penalty_weight * delta_penalty)
 
             loss.backward()
 
@@ -222,9 +233,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
             self.train_metrics.update('residual_loss', residual_loss.item())
             self.train_metrics.update('residual_rel_diff', residual_rel_diff.item())
             
-            # NEW: Update capacity control metrics
             self.train_metrics.update('kl_u_phy', kl_u_phy.item())
             self.train_metrics.update('kl_z_aux', kl_z_aux.item())
+            
             self.train_metrics.update('capacity_target', C_t)
             self.train_metrics.update('capacity_penalty', capacity_penalty.item())
             
@@ -415,12 +426,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
                     z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
                     x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
                     
-                    # Use same loss function as training for consistency
-                    if self.use_capacity_control:
-                        rec_loss, kl_u_phy, kl_z_aux = self._vae_loss_capacity(data, z_phy_stat, z_aux_stat, x_PB)
-                        kl_loss = kl_u_phy + kl_z_aux  # For backward compatibility
-                    else:
-                        rec_loss, kl_loss = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+                    # Use unified VAE loss function (same as training)
+                    rec_loss, kl_u_phy, kl_z_aux = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+                    kl_loss = kl_u_phy + kl_z_aux # Original behavior: combine first, then average
                     
                     # Compute residual_loss for validation (L2 difference)
                     residual_loss = torch.sum((x_PB - x_P).pow(2), dim=1).mean()
@@ -452,57 +460,35 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
     def _vae_loss(self, data, z_phy_stat, z_aux_stat, x, pretrain=False):
         """
-        CHANGED: KL computed in u-space; auxiliaries unchanged.
+        VAE loss function that returns separate KL terms for flexible combination.
+        Returns: rec_loss, kl_u_phy, kl_z_aux (separate terms for both modes)
         """
         rec_loss = torch.sum((x - data).pow(2), dim=1).mean()
 
         n = data.shape[0]
         prior_u_phy_stat, prior_z_aux_stat = self.model.priors(n, self.device)
 
-        KL_u_phy = kldiv_normal_normal(z_phy_stat['mean'], z_phy_stat['lnvar'],
-                                       prior_u_phy_stat['mean'], prior_u_phy_stat['lnvar']) \
-                   if not self.no_phy else torch.zeros(1, device=self.device)
-
-        if pretrain:
-            KL_z_aux = torch.zeros(1, device=self.device)
-        else:
-            KL_z_aux = kldiv_normal_normal(z_aux_stat['mean'], z_aux_stat['lnvar'],
-                                           prior_z_aux_stat['mean'], prior_z_aux_stat['lnvar']) \
-                       if self.config['arch']['phys_vae']['dim_z_aux'] > 0 else torch.zeros(1, device=self.device)
-        
-        kl_loss = (KL_u_phy + KL_z_aux).mean()
-        return rec_loss, kl_loss
-
-    def _vae_loss_capacity(self, data, z_phy_stat, z_aux_stat, x, pretrain=False):
-        """
-        NEW: Capacity-controlled VAE loss with separate physics and auxiliary KL terms.
-        Returns: rec_loss, KL_u_phy, KL_z_aux (separate terms for capacity control)
-        """
-        rec_loss = torch.sum((x - data).pow(2), dim=1).mean()
-
-        n = data.shape[0]
-        prior_u_phy_stat, prior_z_aux_stat = self.model.priors(n, self.device)
-
-        # --- Physics KL in u-space (total scalar, batch-avg) ---
+        # Physics KL in u-space (per-sample, not averaged yet)
         if not self.no_phy:
             KL_u_phy = kldiv_normal_normal(
                 z_phy_stat['mean'], z_phy_stat['lnvar'],
                 prior_u_phy_stat['mean'], prior_u_phy_stat['lnvar']
-            ).mean()     # scalar
+            ).mean()     # a scalar value, average of per-sample KL
         else:
-            KL_u_phy = torch.zeros(1, device=self.device)
+            KL_u_phy = torch.zeros(n, device=self.device)
 
-        # --- Auxiliary KL (unchanged) ---
+        # Auxiliary KL (per-sample, not averaged yet)
         if pretrain or self.config['arch']['phys_vae']['dim_z_aux'] == 0:
-            KL_z_aux = torch.zeros(1, device=self.device)
+            KL_z_aux = torch.zeros(n, device=self.device)
         else:
             KL_z_aux = kldiv_normal_normal(
                 z_aux_stat['mean'], z_aux_stat['lnvar'],
                 prior_z_aux_stat['mean'], prior_z_aux_stat['lnvar']
-            ).mean()
+            ).mean()     # a scalar value, average of per-sample KL
 
-        # Return separate KLs (no mixing)
+        # Return separate KLs for flexible combination
         return rec_loss, KL_u_phy, KL_z_aux
+
 
     def _synthetic_data_loss(self, batch_size):
         """
