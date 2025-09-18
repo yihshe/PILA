@@ -33,14 +33,14 @@ echo "Using Python: $PYTHON_CMD"
 
 #---------------ORIGINAL EXPERIMENTS (NO CAPACITY CONTROL)-----------------
 # Original VAE with standard KL loss
-# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1
+$PYTHON_CMD -m pdb train_phys_smpl.py --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.1
 
 # # Original VAE with different beta values
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term true --beta_max 0.01
 
 #---------------CAPACITY CONTROL EXPERIMENTS-----------------
 # Test capacity control with sensible defaults
-$PYTHON_CMD -m pdb train_phys_smpl.py --config configs/phys_smpl/AE_RTM_C_austria.json --use_capacity_control true --C_max 7.0 --C_gamma 10.0 --beta_aux 0.5
+# $PYTHON_CMD -m pdb train_phys_smpl.py --config configs/phys_smpl/AE_RTM_C_austria.json --use_capacity_control true --C_max 7.0 --C_gamma 10.0 --beta_aux 0.5
 
 
 #---------------ABLATION STUDIES-----------------
