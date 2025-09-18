@@ -86,7 +86,9 @@
             "balance_data_aug": 1.0,
             "balance_residual": 0.001,
             "use_kl_term": true,
-            "beta_max": 0.1
+            "beta_max": 0.1,
+            "edge_penalty_weight": 5e-4,
+            "edge_penalty_eps": 1e-6
         }
     }
 }

@@ -115,7 +115,12 @@ if __name__ == '__main__':
         CustomArgs(['--C_gamma'], type=float,
                    target='trainer;phys_vae;C_gamma'),
         CustomArgs(['--beta_aux'], type=float,
-                   target='trainer;phys_vae;beta_aux')
+                   target='trainer;phys_vae;beta_aux'),
+        # NEW: Edge penalty arguments
+        CustomArgs(['--edge_penalty_weight'], type=float,
+                   target='trainer;phys_vae;edge_penalty_weight'),
+        CustomArgs(['--edge_penalty_eps'], type=float,
+                   target='trainer;phys_vae;edge_penalty_eps')
     ]
     config = ConfigParser.from_args(args, options)
     

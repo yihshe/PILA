@@ -80,7 +80,9 @@
             "epochs_pretrain": 20,
             "kl_warmup_epochs": 50,
             "balance_gate": 0.001,
-            "balance_data_aug": 1.0
+            "balance_data_aug": 1.0,
+            "edge_penalty_weight": 5e-4,
+            "edge_penalty_eps": 1e-6
         }
     }
 }

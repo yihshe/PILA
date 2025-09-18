@@ -59,6 +59,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.ortho_penalty_weight = config['trainer']['phys_vae'].get('ortho_penalty_weight', 0.1)
         self.coeff_penalty_weight = config['trainer']['phys_vae'].get('coeff_penalty_weight', 1e-4)
         self.delta_penalty_weight = config['trainer']['phys_vae'].get('delta_penalty_weight', 1e-4)
+        
+        # NEW: Edge penalty for z_phy to avoid extreme values (0, 1)
+        self.edge_penalty_weight = config['trainer']['phys_vae'].get('edge_penalty_weight', 5e-4)
+        self.edge_penalty_eps = config['trainer']['phys_vae'].get('edge_penalty_eps', 1e-6)
 
         # NEW: gradient clipping
         self.grad_clip_norm = config['trainer'].get('grad_clip_norm', 1.0)
@@ -72,6 +76,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
             'ortho_penalty',  # orthogonality penalty for basis matrix
             'coeff_penalty',  # coefficient L2 penalty
             'delta_penalty',  # delta L2 penalty
+            'edge_penalty',  # edge penalty for z_phy
             'c_norm',  # norm of coefficient vector
             'delta_norm',  # norm of residual vector
             's_norm',  # norm of scale parameters
@@ -174,6 +179,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 coeff_penalty = torch.tensor(0.0, device=data.device)
                 delta_penalty = torch.tensor(0.0, device=data.device)
 
+            # NEW: Edge penalty for z_phy to avoid extreme values (0, 1)
+            edge_penalty = self._edge_penalty(z_phy)
+
             # Stage A: synthetic bootstrap (u-target)
             if not self.no_phy and epoch < self.epochs_pretrain:
                 synthetic_data_loss = self._synthetic_data_loss(data.shape[0])
@@ -202,14 +210,16 @@ class PhysVAETrainerSMPL(BaseTrainer):
                             + aux_term
                             + self.ortho_penalty_weight * ortho_penalty
                             + self.coeff_penalty_weight * coeff_penalty
-                            + self.delta_penalty_weight * delta_penalty)
+                            + self.delta_penalty_weight * delta_penalty
+                            + self.edge_penalty_weight * edge_penalty)
                 else:
                     # --- ORIGINAL MODE ---
                     # Original loss function (preserved exactly as before)
                     loss = (rec_loss + beta * kl_loss + 
                            self.ortho_penalty_weight * ortho_penalty +
                            self.coeff_penalty_weight * coeff_penalty +
-                           self.delta_penalty_weight * delta_penalty)
+                           self.delta_penalty_weight * delta_penalty +
+                           self.edge_penalty_weight * edge_penalty)
                     
                     # Initialize capacity control variables for metrics (when not using capacity control)
                     C_t = 0.0
@@ -238,6 +248,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
             
             self.train_metrics.update('capacity_target', C_t)
             self.train_metrics.update('capacity_penalty', capacity_penalty.item())
+            
+            # NEW: Track edge penalty
+            self.train_metrics.update('edge_penalty', edge_penalty.item())
             
             if not self.no_phy and epoch < self.epochs_pretrain:
                 self.train_metrics.update('syn_data_loss', synthetic_data_loss.item())
@@ -276,12 +289,14 @@ class PhysVAETrainerSMPL(BaseTrainer):
                               f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
                               f"KL_u {kl_u_phy.item():.6f} KL_aux {kl_z_aux.item():.6f} "
                               f"C_t {C_t:.3f} Cap_pen {capacity_penalty.item():.6f} "
+                              f"Edge_pen {edge_penalty.item():.6f} "
                               f"Residual {residual_loss.item():.6f} "
                               f"residual_rel_diff {residual_rel_diff.item():.2f}%")
                 else:
                     log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
                               f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
                               f"KL(beta={beta:.3f}) {kl_loss.item():.6f} "
+                              f"Edge_pen {edge_penalty.item():.6f} "
                               f"Residual {residual_loss.item():.6f} "
                               f"residual_rel_diff {residual_rel_diff.item():.2f}%")
                 
@@ -303,6 +318,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                           f"KL_aux: {log['kl_z_aux']:.6f}, "
                           f"C_t: {log['capacity_target']:.3f}, "
                           f"Cap_pen: {log['capacity_penalty']:.6f}, "
+                          f"Edge_pen: {log['edge_penalty']:.6f}, "
                           f"Residual: {log['residual_loss']:.6f}, "
                           f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
                           f"LR: {current_lr:.6f}")
@@ -311,6 +327,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                           f"Loss: {log['loss']:.6f}, "
                           f"Rec: {log['rec_loss']:.6f}, "
                           f"KL: {log['kl_loss']:.6f}, "
+                          f"Edge_pen: {log['edge_penalty']:.6f}, "
                           f"Residual: {log['residual_loss']:.6f}, "
                           f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
                           f"LR: {current_lr:.6f}")
@@ -511,6 +528,28 @@ class PhysVAETrainerSMPL(BaseTrainer):
             return torch.sum((inferred_u_phy - target_u).pow(2), dim=1).mean()
         else:
             return torch.zeros(1, device=self.device)
+
+    def _edge_penalty(self, z_phy):
+        """
+        Edge penalty to encourage z_phy to avoid extreme values (0, 1).
+        
+        Args:
+            z_phy: Physical variables tensor of shape (batch_size, dim_z_phy)
+            
+        Returns:
+            Edge penalty: λ_edge * [-log(z) - log(1-z)]
+        """
+        if self.no_phy or z_phy is None:
+            return torch.tensor(0.0, device=self.device)
+        
+        # Clamp z_phy to avoid numerical issues
+        z_clamped = z_phy.clamp(self.edge_penalty_eps, 1.0 - self.edge_penalty_eps)
+        
+        # Compute edge penalty: -log(z) - log(1-z)
+        edge_penalty = -torch.log(z_clamped) - torch.log(1.0 - z_clamped)
+        
+        # Return mean penalty across batch and dimensions
+        return edge_penalty.mean()
 
     def _grad_stablizer(self, epoch, batch_idx, loss):
         para_grads = [v.grad.data for v in self.model.parameters(
