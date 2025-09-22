@@ -99,7 +99,7 @@ Examples:
 All experiments are configured with:
 - **WandB Integration**: Enabled for experiment tracking
 - **Gradient Clipping**: For training stability
-- **Early Stopping**: 20 epochs patience
+- **Early Stopping**: 100 epochs patience
 - **Save Period**: Every 10 epochs
 
 ## Ablation Study Support
