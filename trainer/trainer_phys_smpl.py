@@ -61,8 +61,11 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.delta_penalty_weight = config['trainer']['phys_vae'].get('delta_penalty_weight', 1e-4)
         
         # NEW: Edge penalty for z_phy to avoid extreme values (0, 1)
-        self.edge_penalty_weight = config['trainer']['phys_vae'].get('edge_penalty_weight', 5e-4)
-        self.edge_penalty_eps = config['trainer']['phys_vae'].get('edge_penalty_eps', 1e-6)
+        self.edge_penalty_weight = config['trainer']['phys_vae'].get('edge_penalty_weight', 0.0)
+        self.edge_penalty_power = config['trainer']['phys_vae'].get('edge_penalty_power', 0.5)
+        
+        # NEW: EMA prior configuration
+        self.use_ema_prior = config['trainer']['phys_vae'].get('use_ema_prior', False)
 
         # NEW: gradient clipping
         self.grad_clip_norm = config['trainer'].get('grad_clip_norm', 1.0)
@@ -86,6 +89,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
             'kl_z_aux',  # Auxiliary KL
             'capacity_target',  # Current capacity target C_t
             'capacity_penalty',  # Capacity penalty term
+            # NEW: EMA prior metrics
+            'ema_prior_mean_norm',  # L2 norm of EMA prior mean
+            'ema_prior_std_mean',  # Mean of EMA prior standard deviations
             *[m.__name__ for m in metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('rec_loss', 'kl_loss', 'residual_loss', 'residual_rel_diff', *[m.__name__ for m in metric_ftns], writer=self.writer)
 
@@ -143,6 +149,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
             # Encode (u-space stats)
             z_phy_stat, z_aux_stat = self.model.encode(data)
+
+            # NEW: Update EMA prior statistics (if enabled) - only after pretraining phase
+            if self.use_ema_prior and not self.no_phy and epoch > 1 + self.epochs_pretrain:
+                self.model.update_ema_prior(z_phy_stat['mean'], z_phy_stat['lnvar'])
 
             # Draw + decode
             # Use hard_z=True for pure auto-encoder (deterministic), hard_z=False for VAE (stochastic)
@@ -252,6 +262,17 @@ class PhysVAETrainerSMPL(BaseTrainer):
             # NEW: Track edge penalty
             self.train_metrics.update('edge_penalty', edge_penalty.item())
             
+            # NEW: Track EMA prior metrics (only after pretraining phase when EMA starts updating)
+            if self.use_ema_prior and not self.no_phy and hasattr(self.model, 'ema_mean') and epoch > 1 + self.epochs_pretrain:
+                ema_mean_norm = torch.norm(self.model.ema_mean).item()
+                ema_var = (self.model.ema_m2 - self.model.ema_mean**2).clamp(self.model.ema_min_var, self.model.ema_max_var)
+                ema_std_mean = torch.mean(torch.sqrt(ema_var + 1e-8)).item()
+                self.train_metrics.update('ema_prior_mean_norm', ema_mean_norm)
+                self.train_metrics.update('ema_prior_std_mean', ema_std_mean)
+            else:
+                self.train_metrics.update('ema_prior_mean_norm', 0.0)
+                self.train_metrics.update('ema_prior_std_mean', 1.0)
+            
             if not self.no_phy and epoch < self.epochs_pretrain:
                 self.train_metrics.update('syn_data_loss', synthetic_data_loss.item())
             else:
@@ -300,6 +321,13 @@ class PhysVAETrainerSMPL(BaseTrainer):
                               f"Residual {residual_loss.item():.6f} "
                               f"residual_rel_diff {residual_rel_diff.item():.2f}%")
                 
+                # Add EMA prior info to logging (only after pretraining phase when EMA starts updating)
+                if self.use_ema_prior and not self.no_phy and hasattr(self.model, 'ema_mean') and epoch > 1 + self.epochs_pretrain:
+                    ema_mean_norm = torch.norm(self.model.ema_mean).item()
+                    ema_var = (self.model.ema_m2 - self.model.ema_mean**2).clamp(self.model.ema_min_var, self.model.ema_max_var)
+                    ema_std_mean = torch.mean(torch.sqrt(ema_var + 1e-8)).item()
+                    log_str += f" EMA_mean_norm {ema_mean_norm:.3f} EMA_std_mean {ema_std_mean:.3f}"
+                
                 if not self.no_phy and epoch >= self.epochs_pretrain:
                     log_str += f" Ortho {ortho_penalty.item():.6f} Coeff {coeff_penalty.item():.6f} Delta {delta_penalty.item():.6f}"
                 
@@ -346,6 +374,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 summary_str += f", Coeff: {log['coeff_penalty']:.6f}"
             if 'delta_penalty' in log:
                 summary_str += f", Delta: {log['delta_penalty']:.6f}"
+        
+        # Add EMA prior info to summary (only after pretraining phase when EMA starts updating)
+        if self.use_ema_prior and not self.no_phy and 'ema_prior_mean_norm' in log and epoch > 1 + self.epochs_pretrain:
+            summary_str += f", EMA_mean_norm: {log['ema_prior_mean_norm']:.3f}, EMA_std_mean: {log['ema_prior_std_mean']:.3f}"
         
         # summary_str += " (Gate: correction strength, Residual: physics vs corrected L2 diff)"
         self.logger.info(summary_str)
@@ -537,16 +569,20 @@ class PhysVAETrainerSMPL(BaseTrainer):
             z_phy: Physical variables tensor of shape (batch_size, dim_z_phy)
             
         Returns:
-            Edge penalty: λ_edge * [-log(z) - log(1-z)]
+            Edge penalty: λ_edge * [-log(z) - log(1-z)]^power
         """
         if self.no_phy or z_phy is None:
             return torch.tensor(0.0, device=self.device)
         
-        # Clamp z_phy to avoid numerical issues
-        z_clamped = z_phy.clamp(self.edge_penalty_eps, 1.0 - self.edge_penalty_eps)
+        # Clamp z_phy to avoid numerical issues (fixed eps value)
+        eps = 1e-6
+        z_clamped = z_phy.clamp(eps, 1.0 - eps)
         
         # Compute edge penalty: -log(z) - log(1-z)
         edge_penalty = -torch.log(z_clamped) - torch.log(1.0 - z_clamped)
+        
+        # Apply power for fine-grained control
+        edge_penalty = edge_penalty.pow(self.edge_penalty_power)
         
         # Return mean penalty across batch and dimensions
         return edge_penalty.mean()

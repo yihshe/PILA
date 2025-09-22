@@ -61,6 +61,7 @@ class BaseTrainer:
         Full training logic
         """
         not_improved_count = 0
+        last_saved_epoch = None
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
 
@@ -95,10 +96,21 @@ class BaseTrainer:
                 if not_improved_count > self.early_stop:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
+                    # When early stopping, save the best model from the last saved checkpoint
+                    if last_saved_epoch is not None:
+                        self.logger.info("Saving best model from epoch {} as model_best.pth".format(last_saved_epoch))
+                        # Load the last saved checkpoint and save it as model_best
+                        self._load_and_save_best(last_saved_epoch)
                     break
 
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
+                last_saved_epoch = epoch
+        
+        # Save final checkpoint at the end of training if not already saved
+        if epoch % self.save_period != 0:
+            self._save_checkpoint(epoch, save_best=best)
+            last_saved_epoch = epoch
 
     def _save_checkpoint(self, epoch, save_best=False):
         """
@@ -124,6 +136,23 @@ class BaseTrainer:
             best_path = str(self.checkpoint_dir / 'model_best.pth')
             torch.save(state, os.path.join(PARENT_DIR, best_path))
             self.logger.info("Saving current best: model_best.pth ...")
+
+    def _load_and_save_best(self, epoch):
+        """
+        Load a checkpoint from a specific epoch and save it as model_best.pth
+        
+        :param epoch: epoch number of the checkpoint to load
+        """
+        try:
+            checkpoint_path = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+            checkpoint = torch.load(os.path.join(PARENT_DIR, checkpoint_path), map_location='cpu')
+            
+            # Save as model_best.pth
+            best_path = str(self.checkpoint_dir / 'model_best.pth')
+            torch.save(checkpoint, os.path.join(PARENT_DIR, best_path))
+            self.logger.info("Loaded checkpoint from epoch {} and saved as model_best.pth".format(epoch))
+        except Exception as e:
+            self.logger.warning("Failed to load checkpoint from epoch {}: {}".format(epoch, str(e)))
 
     def _resume_checkpoint(self, resume_path):
         """

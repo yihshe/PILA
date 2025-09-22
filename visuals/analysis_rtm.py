@@ -23,7 +23,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_203537_Cmax10/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0922_075413_kl0_edge1_power0.75/models/model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -42,7 +42,7 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL_CAPACITY/0910_203537_Cmax10/models/plots')
+                        'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/0922_075413_kl0_edge1_power0.75/models/plots')
 
 
 
@@ -181,6 +181,7 @@ plt.show()
 """
 Histogram of the latent variables between Coniferous and Deciduous 
 for AE_RTM_corr
+NOTE: NOW BEING USED
 """
 # Histogram of the latent variables of selected species
 df_coniferous = df2[df2['class'].isin(coniferous)]
@@ -228,6 +229,7 @@ plt.savefig(os.path.join(
     SAVE_PATH, 'histogram_realset_vars_corr_coniferous_v_deciduous.png'), dpi=300)
 plt.show()
     
+
 # %%
 """
 Histogram of the latent variables per tree species for AE_RTM_corr
@@ -323,7 +325,8 @@ plt.tight_layout()
 plt.savefig(os.path.join(
     SAVE_PATH, 'histogram_realset_bias_corr.png'), dpi=300)
 
-# %% histogram of bias clustered by forest type for AE_RTM_corr
+# %% histogram of bias clustered by forest type for AE_RTM_corr 
+# NOTE: NOW BEING USED
 NUM_BINS = 100
 fig, axs = plt.subplots(3, 4, figsize=(25, 15))
 df_coniferous = df2[df2['class'].isin(coniferous)]
@@ -408,6 +411,7 @@ plt.savefig(os.path.join(SAVE_PATH, 'scatter_realset_vars_pairs_corr.png'))
 """
 Scatter plot for variable pairs distinguishing Coniferous and Diceduous 
 for VanillaAE, and AE_RTM_corr
+NOTE: NOW BEING USED
 """
 fig, axs = plt.subplots(7, 6, figsize=(25, 25))
 # drop the last two elements in ATTRS (cd and h)
@@ -559,6 +563,7 @@ plt.show()
 """
 ablation: Scatter plot of input and reconstruction bands
 Plot for VanillaAE, AE_RTM, AE_RTM_corr NOTE neurips full plots
+NOTE: NOW BEING USED
 """
 # Scatter plot of the input and reconstructed bands
 fig, axs = plt.subplots(3, 4, figsize=(24, 16))
@@ -618,6 +623,7 @@ For each variable, cluster the sample according to forest type and then
 according to the date of acquisition. Get the mean and std of the clustered
 samples and then plot the time series of the mean and show the std as error bars.
 Plot for VanillaAE, AE_RTM, AE_RTM_corr, NNRegressor
+NOTE: NOW BEING USED
 """
 # ATTRS2 = ATTRS_VANILLA
 ATTRS2 = rtm_paras.keys()
@@ -739,6 +745,7 @@ JM = sqrt(2*(1 - exp(-D^2/2)))
 where D is the Bhattacharyya distance
 D = -ln(sum(sqrt(p(x)*q(x))))
 where p(x) and q(x) are the probability density functions of the two distributions
+NOTE: NOW BEING USED
 """
 # Assuming df2 is your DataFrame, rtm_paras holds parameters, and SAVE_PATH is defined
 ATTRS = list(rtm_paras.keys())

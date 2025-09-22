@@ -116,7 +116,11 @@ class Decoders(nn.Module):
                 self.ortho_penalty_weight = config['arch']['phys_vae'].get('ortho_penalty_weight', 0.1)
         else:
             # no phy
-            self.func_aux_dec = MLP([dim_z_aux, 16, 32, 64, in_channels], activation)
+            if dim_z_aux > 0:
+                self.func_aux_dec = MLP([dim_z_aux, 16, 32, 64, in_channels], activation)
+            else:
+                # If dim_z_aux = 0, create a simple identity mapping
+                self.func_aux_dec = nn.Identity()
 
     def get_tau(self, epoch, epochs_pretrain):
         """Get current temperature for annealing (starts after pretraining)"""
@@ -299,6 +303,14 @@ class PHYS_VAE_SMPL(nn.Module):
         self.in_channels = config['arch']['args']['input_dim']
         self.detach_x_P_for_bias = config['arch']['phys_vae'].get('detach_x_P_for_bias', True)
 
+        # EMA prior configuration
+        self.use_ema_prior = config['trainer']['phys_vae'].get('use_ema_prior', False)
+        self.ema_momentum = config['trainer']['phys_vae'].get('ema_momentum', 0.99)
+        
+        # EMA variance bounds (hardcoded)
+        self.ema_min_var = 1e-3  # variance floor
+        self.ema_max_var = 50.0  # variance ceiling
+
         # Encoding part
         self.enc = Encoders(config)
 
@@ -307,6 +319,12 @@ class PHYS_VAE_SMPL(nn.Module):
 
         # Physics
         self.physics_model = self.physics_init(config)
+        
+        # EMA buffers for u_phy statistics (only if EMA prior is enabled)
+        if self.use_ema_prior and not self.no_phy:
+            self.register_buffer('ema_mean', torch.zeros(self.dim_z_phy))  # E[U]
+            self.register_buffer('ema_m2', torch.ones(self.dim_z_phy))     # E[U^2]
+            self.register_buffer('ema_var', torch.ones(self.dim_z_phy))    # convenience buffer
     
     def physics_init(self, config:dict):
         if config['arch']['args']['physics'] == 'RTM':
@@ -321,13 +339,53 @@ class PHYS_VAE_SMPL(nn.Module):
         y = self.physics_model(z_phy, const=const) # (n, in_channels) 
         return y
 
+    def update_ema_prior(self, u_phy_mean: torch.Tensor, u_phy_lnvar: torch.Tensor):
+        """
+        Update EMA statistics for u_phy using exponential moving average.
+        
+        Args:
+            u_phy_mean: Current batch posterior means (shape: [batch_size, dim_z_phy])
+            u_phy_lnvar: Current batch posterior log-variances (shape: [batch_size, dim_z_phy])
+        """
+        if not self.use_ema_prior or self.no_phy:
+            return
+            
+        with torch.no_grad():
+            decay = self.ema_momentum  # e.g., 0.999
+            mu_q = u_phy_mean.detach()                 # (B, D)
+            var_q = torch.exp(u_phy_lnvar.detach())    # (B, D)
+
+            # First moment E[U]
+            batch_mu = mu_q.mean(dim=0)                # (D,)
+
+            # Second moment E[U^2] = E[var + mu^2]
+            batch_m2 = (var_q + mu_q**2).mean(dim=0)   # (D,)
+
+            # EMA updates
+            self.ema_mean.mul_(decay).add_(batch_mu, alpha=1 - decay)
+            self.ema_m2.mul_(decay).add_(batch_m2, alpha=1 - decay)
+
+            # Convert moments to variance and clamp
+            ema_var = (self.ema_m2 - self.ema_mean**2).clamp(self.ema_min_var, self.ema_max_var)
+            self.ema_var.copy_(ema_var)
+
     def priors(self, n:int, device:torch.device):
         """
-        CHANGED: priors now in u-space for physics (standard normal),
+        CHANGED: priors now in u-space for physics (standard normal or EMA Gaussian),
         auxiliaries remain standard normal as before.
         """
-        prior_u_phy_stat = {'mean': torch.zeros(n, self.dim_z_phy, device=device),
-                            'lnvar': torch.zeros(n, self.dim_z_phy, device=device)}
+        if self.use_ema_prior and not self.no_phy:
+            # Use EMA Gaussian prior for u_phy
+            ema_var = (self.ema_m2 - self.ema_mean**2).clamp(self.ema_min_var, self.ema_max_var)
+            prior_u_phy_stat = {
+                'mean': self.ema_mean.unsqueeze(0).expand(n, -1),
+                'lnvar': ema_var.log().unsqueeze(0).expand(n, -1)
+            }
+        else:
+            # Use standard normal prior for u_phy
+            prior_u_phy_stat = {'mean': torch.zeros(n, self.dim_z_phy, device=device),
+                                'lnvar': torch.zeros(n, self.dim_z_phy, device=device)}
+        
         prior_z_aux_stat = {'mean': torch.zeros(n, max(0,self.dim_z_aux), device=device),
                             'lnvar': torch.zeros(n, max(0,self.dim_z_aux), device=device)}
         return prior_u_phy_stat, prior_z_aux_stat
@@ -407,7 +465,7 @@ class PHYS_VAE_SMPL(nn.Module):
                 c = torch.zeros(x_P.shape[0], 0, device=x_P.device)
         else:
             y = torch.zeros(z_phy.shape[0], self.in_channels, device=z_phy.device)
-            if self.dim_z_aux >= 0:
+            if self.dim_z_aux > 0:
                 x_PB = self.dec.func_aux_dec(z_aux) 
             else:
                x_PB = torch.zeros(z_phy.shape[0], self.in_channels, device=z_phy.device)

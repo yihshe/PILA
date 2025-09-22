@@ -105,6 +105,8 @@ if __name__ == '__main__':
                    target='arch;phys_vae;r_init'),
         CustomArgs(['--dim_z_aux'], type=int,
                    target='arch;phys_vae;dim_z_aux'),
+        CustomArgs(['--residual_rank'], type=int,
+                   target='arch;phys_vae;residual_rank'),
         CustomArgs(['--detach_x_P_for_bias'], type=str,
                    target='arch;phys_vae;detach_x_P_for_bias'),
         # NEW: Capacity control arguments
@@ -116,11 +118,20 @@ if __name__ == '__main__':
                    target='trainer;phys_vae;C_gamma'),
         CustomArgs(['--beta_aux'], type=float,
                    target='trainer;phys_vae;beta_aux'),
+        CustomArgs(['--coeff_penalty_weight'], type=float,
+            target='trainer;phys_vae;coeff_penalty_weight'),
+        CustomArgs(['--delta_penalty_weight'], type=float,
+            target='trainer;phys_vae;delta_penalty_weight'),
         # NEW: Edge penalty arguments
         CustomArgs(['--edge_penalty_weight'], type=float,
                    target='trainer;phys_vae;edge_penalty_weight'),
-        CustomArgs(['--edge_penalty_eps'], type=float,
-                   target='trainer;phys_vae;edge_penalty_eps')
+        CustomArgs(['--edge_penalty_power'], type=float,
+                   target='trainer;phys_vae;edge_penalty_power'),
+        # NEW: EMA prior arguments
+        CustomArgs(['--use_ema_prior'], type=str,
+                   target='trainer;phys_vae;use_ema_prior'),
+        CustomArgs(['--ema_momentum'], type=float,
+                   target='trainer;phys_vae;ema_momentum'),
     ]
     config = ConfigParser.from_args(args, options)
     
@@ -130,6 +141,10 @@ if __name__ == '__main__':
     print(f"  beta_max: {config.config['trainer']['phys_vae'].get('beta_max', 'NOT_SET')}")
     print(f"  kl_warmup_epochs: {config.config['trainer']['phys_vae'].get('kl_warmup_epochs', 'NOT_SET')}")
     print(f"  epochs_pretrain: {config.config['trainer']['phys_vae'].get('epochs_pretrain', 'NOT_SET')}")
+    print(f"  use_ema_prior: {config.config['trainer']['phys_vae'].get('use_ema_prior', 'NOT_SET')}")
+    print(f"  ema_momentum: {config.config['trainer']['phys_vae'].get('ema_momentum', 'NOT_SET')}")
+    print(f"  edge_penalty_weight: {config.config['trainer']['phys_vae'].get('edge_penalty_weight', 'NOT_SET')}")
+    print(f"  edge_penalty_power: {config.config['trainer']['phys_vae'].get('edge_penalty_power', 'NOT_SET')}")
     print(f"  detach_x_P_for_bias: {config.config['arch']['phys_vae'].get('detach_x_P_for_bias', 'NOT_SET')}")
 
     wandb.init(

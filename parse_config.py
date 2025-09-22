@@ -149,6 +149,12 @@ def _update_config(config, modification):
             elif k == 'arch;phys_vae;detach_x_P_for_bias':
                 if isinstance(v, str):
                     v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'trainer;phys_vae;use_ema_prior':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'trainer;phys_vae;use_capacity_control':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
             _set_by_path(config, k, v)
     return config
 
