@@ -21,7 +21,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer_frm4veg.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior/0406_114131/model_best_testset_analyzer_frm4veg.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer_frm4veg.csv')
-    BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.2/0407_120629/model_best_testset_analyzer_frm4veg.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/model_best_testset_analyzer_frm4veg.csv')
 
 
 CSV_PATH_INSITU = '/maps/ys611/MAGIC/data/raw/wytham/csv_preprocessed_data/frm4veg_insitu.csv'
@@ -33,7 +33,7 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots_frm4veg')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots_frm4veg')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots_frm4veg')
-                        'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.2/0407_120629/plots_frm4veg')
+                        'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/plots_frm4veg')
 
 
 
@@ -45,8 +45,8 @@ S2_names = {
     'B06_RE2': 'B6', 'B07_RE3': 'B7', 'B08_NIR1': 'B8', 'B8A_NIR2': 'B8a',
     'B09_WV': 'B9', 'B11_SWI1': 'B11', 'B12_SWI2': 'B12'
 }
-# rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
-rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_exp.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
+rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_v2.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
+# rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_exp.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
 
 ATTRS = list(rtm_paras.keys())
 # for each attr in ATTRS, create a LaTex variable name like $Z_{\mathrm{attr}}$
@@ -131,7 +131,10 @@ def pred2insitu(df_insitu: pd.DataFrame, df_pred: pd.DataFrame, attrs: dict) -> 
             # Multiply LAI by fractional cover to get actual area-based LAI
             if 'latent_fc' not in df_pred.columns:
                 raise ValueError("'latent_fc' is required in df_pred to convert LAI")
-            pred_values = pred_values * df_pred['latent_fc'].values
+            pred_values = pred_values 
+            # pred_values = pred_values + df_pred['latent_LAIu'].values
+        if insitu_attr == 'LAI':
+            insitu_values = insitu_values / (df_insitu[ATTRS_INSITU['fc']]+1e-6)
         elif pred_attr == 'cab':
             # Convert cab from μg/cm² to g/m²
             pred_values = pred_values / 100

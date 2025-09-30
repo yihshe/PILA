@@ -11,7 +11,7 @@ import glob
 BASE_DIR = "/maps/ys611/MAGIC/data/raw/wytham"
 
 # Load the shapefile
-shapefile_path = os.path.join(BASE_DIR, "shapfile_wytham_woods_roi", "perimeter_poly_with_clearings_region.shp")
+shapefile_path = os.path.join(BASE_DIR, "shapefile_wytham_woods_roi", "perimeter_poly_with_clearings_region.shp")
 gdf = gpd.read_file(shapefile_path)
 
 # Load all Sentinel-2 rasters

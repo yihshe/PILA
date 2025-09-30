@@ -132,6 +132,9 @@ if __name__ == '__main__':
                    target='trainer;phys_vae;use_ema_prior'),
         CustomArgs(['--ema_momentum'], type=float,
                    target='trainer;phys_vae;ema_momentum'),
+        # NEW: data_loader type
+        CustomArgs(['--data_loader_type'], type=str,
+                   target='data_loader;type'),
     ]
     config = ConfigParser.from_args(args, options)
     

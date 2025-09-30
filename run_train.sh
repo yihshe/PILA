@@ -2,7 +2,7 @@
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
 # Train AE_RTM_A (classical autoencoder)
-python3 train.py --config configs/AE_RTM_A.json
+# python3 train.py --config configs/AE_RTM_A.json
 
 # # Train AE_RTM_B (decoder being replaced with RTM)
 # python3 train.py --config configs/AE_RTM_B.json
@@ -23,7 +23,5 @@ python3 train.py --config configs/AE_RTM_A.json
 # python3 train.py --config configs/AE_Mogi_C.json
 
 # Train AE_DPM_A (classical autoencoder)
-python3 train.py --config configs/AE_DPM_A.json
-
-
+# python3 train.py --config configs/AE_DPM_A.json
 

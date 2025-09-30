@@ -30,14 +30,15 @@ CSV_S2_2018_DIR = os.path.join(BASE_DIR, "csv_preprocessed_data", "rasters_senti
 CSV_S2_FRM4VEG_DIR = os.path.join(BASE_DIR, "csv_preprocessed_data", "frm4veg_sentinel2_2018.csv")
 
 # TODO add the S2 spectra from frm4veg sample sites and standardize the data
-SAMPLE_RATIO = 0.1 #0.5 for insitu_period
+SAMPLE_RATIO = 0.5 #0.5 for insitu_period
 SPLIT_RATIO = 0.2
 
 csv_s2_2018 = pd.read_csv(CSV_S2_2018_DIR)
 
 # Filter the data to only include the dates of interest
-# dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
-dates = ['2018.06.29', '2018.07.06']
+dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
+# dates = ['2018.06.29', '2018.07.06']
+# dates = ['2018.07.06']
 csv_s2_2018 = csv_s2_2018[csv_s2_2018["date"].isin(dates)]
 
 sample_ids = csv_s2_2018["sample_id"].unique()
@@ -71,14 +72,14 @@ df_test, _ = standardize(df_test, S2_BANDS, scaler)
 df_test_frm4veg, _ = standardize(df_test_frm4veg, S2_BANDS, scaler)
 
 # Save the train, valid and test sets
-df_train.to_csv(SAVE_DIR_TRAIN, index=False)
-df_valid.to_csv(SAVE_DIR_VALID, index=False)
-df_test.to_csv(SAVE_DIR_TEST, index=False)
-df_test_frm4veg.to_csv(SAVE_DIR_TEST_FRM4VEG, index=False)
+# df_train.to_csv(SAVE_DIR_TRAIN, index=False)
+# df_valid.to_csv(SAVE_DIR_VALID, index=False)
+# df_test.to_csv(SAVE_DIR_TEST, index=False)
+# df_test_frm4veg.to_csv(SAVE_DIR_TEST_FRM4VEG, index=False)
 
-# Save the scaler
-np.save(os.path.join(SAVE_DIR, "train_x_mean.npy"), scaler.mean_)
-np.save(os.path.join(SAVE_DIR, "train_x_scale.npy"), scaler.scale_)
+# # Save the scaler
+# np.save(os.path.join(SAVE_DIR, "train_x_mean.npy"), scaler.mean_)
+# np.save(os.path.join(SAVE_DIR, "train_x_scale.npy"), scaler.scale_)
 print("Done!")
 
 
