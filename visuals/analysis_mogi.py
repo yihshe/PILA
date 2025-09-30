@@ -77,17 +77,17 @@ def kalman_filter(data, alpha=0.002):
     return smooth_state_means
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/models/'
+BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi/0509_103601_smooth'
 # TODO add comparison results for wosmooth case in appendix
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 
 CSV_PATH0 = os.path.join( 
-    BASE_PATH, 'PHYS_VAE_Mogi_C_seq/1210_094000',
+    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/0929_132625_kl1_edge0/models',
     'model_best_testset_analyzer.csv'
 )
 CSV_PATH1 = os.path.join(
-    BASE_PATH, 'PHYS_VAE_Mogi_B_seq/1210_093812',
+    BASE_PATH, 'models/PHYS_VAE_Mogi_B_seq/1210_093812',
     'model_best_testset_analyzer.csv'
 )
 
@@ -101,7 +101,7 @@ df0 = recale_output(pd.read_csv(CSV_PATH0), MEAN, SCALE)
 df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
 # df2 = recale_output(pd.read_csv(CSV_PATH3), MEAN, SCALE)
 
-SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_Mogi_C_seq/1210_094000', 'plots')
+SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/0929_132625_kl1_edge0/models', 'plots')
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
@@ -168,19 +168,21 @@ for direction in ['uz']:
 
 # %% Plot the line scatter for the output and target of each GPS
 # NOTE neurips full plot
-df = df1
-color = 'red'
-# color = 'blue'
+# NOTE: NOW BEING USED
+df = df0
+# color = 'red'
+color = 'blue'
 ylabel = '$X_{\mathrm{GPS, C}}$'
+token = 'output'
 for direction in ['ux', 'uy', 'uz']:
     fig, axs = plt.subplots(3, 4, figsize=(24, 16))
     for i, station in enumerate(station_info.keys()):
         ax = axs[i//4, i % 4]
         gps = f'{direction}_{station}'
-        sns.scatterplot(x='target_'+gps, y='output_'+gps, data=df, ax=ax, s=8,
+        sns.scatterplot(x='target_'+gps, y=f'{token}_'+gps, data=df, ax=ax, s=8,
                         alpha=0.5, color=color)
         # rmse = np.sqrt(np.mean((df[f'target_{gps}'] - df[f'output_{gps}'])**2))
-        r2 = r_square(df[f'target_{gps}'], df[f'output_{gps}'])
+        r2 = r_square(df[f'target_{gps}'], df[f'{token}_{gps}'])
         fontsize = 30
         ax.set_title(station, fontsize=fontsize)
         xlabel = '$X_{\mathrm{GPS}}$'
@@ -211,26 +213,27 @@ for direction in ['ux', 'uy', 'uz']:
         ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
     plt.tight_layout()
     plt.savefig(
-        os.path.join(SAVE_PATH, f'{direction}_output_target_wocorr.png'))
+        os.path.join(SAVE_PATH, f'{direction}_{token}_target_corr.png'))
     plt.show()
 
 # %% plot the histogram of the four variables
 # NOTE plot with w/o correction case
+# NOTE: NOW BEING USED
 NUM_BINS = 100
 # df = df0
 fig, axs = plt.subplots(1, 4, figsize=(25, 5))
 for i, attr in enumerate(ATTRS.keys()):
     ax = axs[i]
-    sns.histplot(
-        df1[f'latent_{attr}'].values,
-        bins=NUM_BINS,
-        ax=ax,
-        color='red',
-        alpha=0.5,
-        # label='w/o $C$'
-        # set bold font for the latex label $C$
-        label='w/o $\mathbf{C}$'
-    )
+    # sns.histplot(
+    #     df1[f'latent_{attr}'].values,
+    #     bins=NUM_BINS,
+    #     ax=ax,
+    #     color='red',
+    #     alpha=0.5,
+    #     # label='w/o $C$'
+    #     # set bold font for the latex label $C$
+    #     label='w/o $\mathbf{C}$'
+    # )
     sns.histplot(
         df0[f'latent_{attr}'].values,
         bins=NUM_BINS,
@@ -247,12 +250,13 @@ for i, attr in enumerate(ATTRS.keys()):
     ax.yaxis.labelpad = 10
     ax.legend(fontsize=fontsize-5)
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'histogram_latent_corr_v_wocorr.png'))
+plt.savefig(os.path.join(SAVE_PATH, 'histogram_latent_corr.png'))
 plt.show()
 
 # %%
 # scatter plot of the latent variables given date order
 # first sort the dataframe by date in ascending order
+# NOTE: NOW BEING USED
 df = df0
 df['date'] = pd.to_datetime(df['date'], format='%Y.%m.%d')
 # df = df.sort_values(by='date')
@@ -290,10 +294,11 @@ plt.show()
 
 # %%
 # scatter plot of the gps displacement given date order for both output and target
+# NOTE: NOW BEING USED
 df = df0
 df['date'] = pd.to_datetime(df['date'], format='%Y.%m.%d')
-# for direction in ['ux', 'uy', 'uz']:
-for direction in ['uy']:
+for direction in ['ux', 'uy', 'uz']:
+# for direction in ['uy']:
     fig, axs = plt.subplots(4, 3, figsize=(30, 20))
     for i, station in enumerate(station_info.keys()):
         ax = axs[i//3, i % 3]
@@ -325,6 +330,7 @@ The following code is for AE_Mogi_corr only
 """
 # %%
 # scater plot of the corrected bias given date order
+# NOTE: NOW BEING USED
 df = df0
 df['date'] = pd.to_datetime(df['date'], format='%Y.%m.%d')
 for direction in ['ux', 'uy', 'uz']:
@@ -351,6 +357,7 @@ for direction in ['ux', 'uy', 'uz']:
     plt.show()
 # %%
 # plot the scatter plot of the init_output from Mogi and target
+# NOTE: NOW BEING USED
 df = df0
 # fig, axs = plt.subplots(2, 3, figsize=(30, 10))
 fig, axs = plt.subplots(12, 3, figsize=(30, 60))
@@ -443,6 +450,7 @@ plt.savefig(os.path.join(
 plt.show()
 # %%
 # TODO combine csvs from both train and test sets to plot the gps displacements
+# NOTE: This timeseries plot combining both train and test sets can be done later
 CSV_PATH = os.path.join(
     BASE_PATH, 'AE_Mogi_corr/0509_102619_smooth', 
     'model_best_testset_analyzer_train.csv'

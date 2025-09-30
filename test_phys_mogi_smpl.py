@@ -160,8 +160,6 @@ def main(config, args: argparse.Namespace):
             data_concat(analyzer, 'output', x_PB)  # corrected output (physics + bias)
             data_concat(analyzer, 'target', target)
             data_concat(analyzer, 'latent', latent)
-            data_concat(analyzer, 'sample_id', data_dict['sample_id'])
-            data_concat(analyzer, 'class', data_dict['class'])
             data_concat(analyzer, 'date', data_dict['date'])
             # NOTE this MSE loss given by PyTorch is element-wise, but for Phys-VAE, it is sample-wise torch.sum((output-target)**2, dim=1).mean()
             # NOTE the way how the loss is computed in MAGIC also need to be double-checked
@@ -208,9 +206,7 @@ def main(config, args: argparse.Namespace):
     # Create a pandas dataframe
     data = data.cpu().numpy()
     df = pd.DataFrame(columns=columns, data=data)
-    # Add sample_id, class, and date to the dataframe
-    df['sample_id'] = analyzer['sample_id']
-    df['class'] = analyzer['class']
+    # Add date to the dataframe
     df['date'] = analyzer['date']
 
     df.to_csv(
