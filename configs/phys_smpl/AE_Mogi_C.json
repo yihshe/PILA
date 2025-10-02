@@ -7,6 +7,8 @@
             "physics": "Mogi",
             "input_dim": 36,
             "hidden_dim": 4,
+            "time_feat_dim": 0,
+            "use_time_in_residual": false,
             "mogi_paras": "configs/mogi_paras.json",
             "station_info": "configs/station_info.json",
             "standardization": {

@@ -140,6 +140,13 @@ class PhysVAETrainerSMPL(BaseTrainer):
         for batch_idx, data_dict in enumerate(self.data_loader):
             data = data_dict[self.data_key].to(self.device)
             input_const = {k: data_dict[k].to(self.device) for k in self.input_const_keys} if self.input_const_keys else None
+            
+            # Get time features if available
+            time_feats = data_dict.get('time_feats', None)
+            if time_feats is not None:
+                time_feats = time_feats.to(self.device)
+                if time_feats.dim() == 3:  # For sequence data
+                    time_feats = time_feats.view(-1, time_feats.size(-1))
 
             if data.dim() == 3:
                 sequence_len = data.size(1)
@@ -147,8 +154,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
             self.optimizer.zero_grad()
 
-            # Encode (u-space stats)
-            z_phy_stat, z_aux_stat = self.model.encode(data)
+            # Encode (u-space stats) with optional time features
+            z_phy_stat, z_aux_stat = self.model.encode(data, time_feats)
 
             # NEW: Update EMA prior statistics (if enabled) - only after pretraining phase
             if self.use_ema_prior and not self.no_phy and epoch > 1 + self.epochs_pretrain:
@@ -465,11 +472,19 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 try:
                     data = data_dict[self.data_key].to(self.device)
                     input_const = {k: data_dict[k].to(self.device) for k in self.input_const_keys} if self.input_const_keys else None
+                    
+                    # Get time features if available
+                    time_feats = data_dict.get('time_feats', None)
+                    if time_feats is not None:
+                        time_feats = time_feats.to(self.device)
+                        if time_feats.dim() == 3:  # For sequence data
+                            time_feats = time_feats.view(-1, time_feats.size(-1))
+                    
                     if data.dim() == 3:
                         data = data.view(-1, data.size(-1))
 
                     # Get full model output to compute residual_loss
-                    z_phy_stat, z_aux_stat = self.model.encode(data)
+                    z_phy_stat, z_aux_stat = self.model.encode(data, time_feats)
                     # Use same hard_z setting as training
                     use_deterministic = not self.use_kl_term
                     z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)

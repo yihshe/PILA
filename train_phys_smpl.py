@@ -26,6 +26,7 @@ def main(config):
 
     # Setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
+    
     valid_data_loader = getattr(module_data, config['data_loader']['type'])(
         config['data_loader']['data_dir_valid'],
         batch_size=64,
@@ -135,6 +136,11 @@ if __name__ == '__main__':
         # NEW: data_loader type
         CustomArgs(['--data_loader_type'], type=str,
                    target='data_loader;type'),
+        # NEW: Time feature arguments
+        CustomArgs(['--time_feat_dim'], type=int,
+                   target='arch;args;time_feat_dim'),
+        CustomArgs(['--use_time_in_residual'], type=str,
+                   target='arch;args;use_time_in_residual'),
     ]
     config = ConfigParser.from_args(args, options)
     

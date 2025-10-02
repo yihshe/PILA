@@ -85,14 +85,21 @@ class Decoders(nn.Module):
         dim_z_phy = config['arch']['phys_vae']['dim_z_phy'] #7 for RTM, 4 for Mogi
         activation = config['arch']['phys_vae']['activation'] #elu 
         no_phy = config['arch']['phys_vae']['no_phy']
+        
+        # Get time dimension from config
+        time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
+        self.time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
+        
+        # Option to use time features in residual coefficient computation
+        self.use_time_in_residual = config['arch']['args'].get('use_time_in_residual', False)
 
         if not no_phy:
             if dim_z_aux >= 0:
                 # IMPROVED: [z_aux, x_P_det] -> Linear -> c -> tanh(c/tau) -> delta = (c*s)@B.T
                 residual_rank = config['arch']['phys_vae'].get('residual_rank', dim_z_aux)  # Default to dim_z_aux
                 
-                # Linear coefficient transformation: [z_aux, x_P_det] -> residual_rank
-                coeff_input_dim = dim_z_aux + in_channels  # z_aux + x_P
+                # Linear coefficient transformation: [z_aux, x_P_det, time_feats] -> residual_rank
+                coeff_input_dim = dim_z_aux + in_channels + time_feat_dim  # z_aux + x_P + time_feats
                 self.coeff = nn.Linear(coeff_input_dim, residual_rank, bias=True)
                 
                 # Per-direction scale parameters
@@ -166,14 +173,19 @@ class Decoders(nn.Module):
         """Get r value for inference (uses saved value if available)"""
         return getattr(self, '_inference_r', self.r_final)
     
-    def compute_coefficient(self, z_aux, x_P_det, epoch, epochs_pretrain, use_inference_values=False):
+    def compute_coefficient(self, z_aux, x_P_det, epoch, epochs_pretrain, use_inference_values=False, time_feats=None):
         """
-        IMPROVED: Compute coefficient from [z_aux, x_P_det] with temperature annealing
-        c_raw = Linear([z_aux, x_P_det])
+        IMPROVED: Compute coefficient from [z_aux, x_P_det, time_feats] with temperature annealing
+        c_raw = Linear([z_aux, x_P_det, time_feats])
         c = tanh(c_raw / tau)
         """
-        # Concatenate z_aux and physics context
-        coeff_input = torch.cat([z_aux, x_P_det], dim=1)
+        # Concatenate z_aux, physics context, and time features
+        if time_feats is not None and self.time_feat_dim > 0 and self.use_time_in_residual:
+            # Use only the first time_feat_dim elements of the 4-dim time features
+            time_feats_sliced = time_feats[..., :self.time_feat_dim]
+            coeff_input = torch.cat([z_aux, x_P_det, time_feats_sliced], dim=1)
+        else:
+            coeff_input = torch.cat([z_aux, x_P_det], dim=1)
         c_raw = self.coeff(coeff_input)  # (batch_size, residual_rank)
         
         # Apply temperature annealing (starts after pretraining)
@@ -198,11 +210,19 @@ class FeatureExtractor(nn.Module):
         hidlayers_feat = config['arch']['phys_vae']['hidlayers_feat']#[32,]
         num_units_feat = config['arch']['phys_vae']['num_units_feat']#64
         activation = config['arch']['phys_vae']['activation']#elu
+        
+        # Get time dimension from config
+        time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
+        self.time_feat_dim = time_feat_dim
     
-        # Shared backbone for feature extraction
-        self.func_feat = MLP([in_channels,]+hidlayers_feat+[num_units_feat,], activation)
+        # Feature extractor now projects (in_channels + time_feat_dim) -> num_units_feat
+        self.func_feat = MLP([in_channels + time_feat_dim,]+hidlayers_feat+[num_units_feat,], activation)
 
-    def forward(self, x:torch.Tensor):
+    def forward(self, x:torch.Tensor, t:torch.Tensor=None):
+        if t is not None and self.time_feat_dim > 0:
+            # Use only the first time_feat_dim elements of the 4-dim time features
+            t_sliced = t[..., :self.time_feat_dim]
+            x = torch.cat([x, t_sliced], dim=-1)
         return self.func_feat(x) # n x num_units_feat
 
 
@@ -325,6 +345,9 @@ class PHYS_VAE_SMPL(nn.Module):
             self.register_buffer('ema_mean', torch.zeros(self.dim_z_phy))  # E[U]
             self.register_buffer('ema_m2', torch.ones(self.dim_z_phy))     # E[U^2]
             self.register_buffer('ema_var', torch.ones(self.dim_z_phy))    # convenience buffer
+        
+        # Store time features for decoder use
+        self.time_feats = None
     
     def physics_init(self, config:dict):
         if config['arch']['args']['physics'] == 'RTM':
@@ -390,15 +413,19 @@ class PHYS_VAE_SMPL(nn.Module):
                             'lnvar': torch.zeros(n, max(0,self.dim_z_aux), device=device)}
         return prior_u_phy_stat, prior_z_aux_stat
 
-    def encode(self, x:torch.Tensor):
+    def encode(self, x:torch.Tensor, t:torch.Tensor=None):
         """
         CHANGED: z_aux encoding from feature only (as before).
+        Now supports optional time features.
         """
         x_ = x
         n = x_.shape[0]
         device = x_.device
 
-        feature = self.enc.func_feat(x_)
+        # Store time features for decoder use
+        self.time_feats = t
+
+        feature = self.enc.func_feat(x_, t)
 
         # infer z_aux from feature only
         if self.dim_z_aux > 0:
@@ -448,7 +475,8 @@ class PHYS_VAE_SMPL(nn.Module):
             if self.dim_z_aux >= 0:
                 # Compute coefficient from z_aux with temperature annealing
                 x_P_input = x_P.detach() if detach_x_P_for_bias else x_P
-                c = self.dec.compute_coefficient(z_aux, x_P_input, epoch, epochs_pretrain, use_inference_values)
+                # Pass time features if available
+                c = self.dec.compute_coefficient(z_aux, x_P_input, epoch, epochs_pretrain, use_inference_values, self.time_feats)
                 
                 # Compute low-rank residual: delta = (c * s) @ B.T
                 delta = torch.matmul(c * self.dec.s, self.dec.B.T)
