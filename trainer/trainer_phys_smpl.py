@@ -64,6 +64,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.edge_penalty_weight = config['trainer']['phys_vae'].get('edge_penalty_weight', 0.0)
         self.edge_penalty_power = config['trainer']['phys_vae'].get('edge_penalty_power', 0.5)
         
+        # NEW: Temporal smoothness regularization for Mogi source parameters
+        self.temporal_smoothness_weight = config['trainer']['phys_vae'].get('temporal_smoothness_weight', 0.0)
+        
         # NEW: EMA prior configuration
         self.use_ema_prior = config['trainer']['phys_vae'].get('use_ema_prior', False)
 
@@ -80,6 +83,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
             'coeff_penalty',  # coefficient L2 penalty
             'delta_penalty',  # delta L2 penalty
             'edge_penalty',  # edge penalty for z_phy
+            'temporal_smoothness',  # temporal smoothness penalty for Mogi source
             'c_norm',  # norm of coefficient vector
             'delta_norm',  # norm of residual vector
             's_norm',  # norm of scale parameters
@@ -149,6 +153,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                     time_feats = time_feats.view(-1, time_feats.size(-1))
 
             if data.dim() == 3:
+                # Sequence format: (batch_size, seq_len, features)
                 sequence_len = data.size(1)
                 data = data.view(-1, data.size(-1))
 
@@ -198,6 +203,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
             # NEW: Edge penalty for z_phy to avoid extreme values (0, 1)
             edge_penalty = self._edge_penalty(z_phy)
+            
+            # NEW: Temporal smoothness regularization for Mogi source parameters
+            temporal_smoothness = self._temporal_smoothness_loss(z_phy, sequence_len)
 
             # Stage A: synthetic bootstrap (u-target)
             if not self.no_phy and epoch < self.epochs_pretrain:
@@ -228,7 +236,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
                             + self.ortho_penalty_weight * ortho_penalty
                             + self.coeff_penalty_weight * coeff_penalty
                             + self.delta_penalty_weight * delta_penalty
-                            + self.edge_penalty_weight * edge_penalty)
+                            + self.edge_penalty_weight * edge_penalty
+                            + self.temporal_smoothness_weight * temporal_smoothness)
                 else:
                     # --- ORIGINAL MODE ---
                     # Original loss function (preserved exactly as before)
@@ -236,7 +245,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
                            self.ortho_penalty_weight * ortho_penalty +
                            self.coeff_penalty_weight * coeff_penalty +
                            self.delta_penalty_weight * delta_penalty +
-                           self.edge_penalty_weight * edge_penalty)
+                           self.edge_penalty_weight * edge_penalty +
+                           self.temporal_smoothness_weight * temporal_smoothness)
                     
                     # Initialize capacity control variables for metrics (when not using capacity control)
                     C_t = 0.0
@@ -268,6 +278,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
             
             # NEW: Track edge penalty
             self.train_metrics.update('edge_penalty', edge_penalty.item())
+            
+            # NEW: Track temporal smoothness
+            self.train_metrics.update('temporal_smoothness', temporal_smoothness.item())
             
             # NEW: Track EMA prior metrics (only after pretraining phase when EMA starts updating)
             if self.use_ema_prior and not self.no_phy and hasattr(self.model, 'ema_mean') and epoch > 1 + self.epochs_pretrain:
@@ -481,6 +494,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
                             time_feats = time_feats.view(-1, time_feats.size(-1))
                     
                     if data.dim() == 3:
+                        # Sequence format: (batch_size, seq_len, features)
+                        sequence_len = data.size(1)
                         data = data.view(-1, data.size(-1))
 
                     # Get full model output to compute residual_loss
@@ -527,7 +542,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
         VAE loss function that returns separate KL terms for flexible combination.
         Returns: rec_loss, kl_u_phy, kl_z_aux (separate terms for both modes)
         """
-        rec_loss = torch.sum((x - data).pow(2), dim=1).mean()
+        # Use the configured loss function for reconstruction loss
+        # rec_loss = torch.sum((x - data).pow(2), dim=1).mean()
+        rec_loss = self.criterion(x, data)
 
         n = data.shape[0]
         prior_u_phy_stat, prior_z_aux_stat = self.model.priors(n, self.device)
@@ -622,3 +639,38 @@ class PhysVAETrainerSMPL(BaseTrainer):
             return epoch / warmup_epochs
         else:
             return 1.0
+
+    def _temporal_smoothness_loss(self, z_phy, sequence_len):
+        """
+        Temporal smoothness regularization for Mogi source parameters.
+        Encourages minimal variance in the spatial coordinates (xcen, ycen, d) 
+        within each temporal sequence to enforce temporal smoothness.
+        
+        Args:
+            z_phy: Physical variables tensor of shape (batch_size * seq_len, dim_z_phy)
+            sequence_len: Length of temporal sequences (None if not using sequences)
+            
+        Returns:
+            Temporal smoothness penalty: variance of spatial coordinates within sequences
+        """
+        if self.no_phy or z_phy is None or sequence_len is None:
+            return torch.tensor(0.0, device=self.device)
+        
+        # Reshape z_phy back to sequence format: (batch_size, seq_len, dim_z_phy)
+        batch_size = z_phy.size(0) // sequence_len
+        if batch_size * sequence_len != z_phy.size(0):
+            # If not evenly divisible, we can't apply temporal smoothness
+            return torch.tensor(0.0, device=self.device)
+        
+        z_phy_seq = z_phy.view(batch_size, sequence_len, -1)  # (batch_size, seq_len, dim_z_phy)
+        
+        # For Mogi model, dim_z_phy=4: [xcen, ycen, d, dV]
+        # We apply smoothness to the first 3 dimensions (spatial coordinates)
+        spatial_coords = z_phy_seq[:, :, :3]  # (batch_size, seq_len, 3)
+        
+        # Compute variance across the sequence dimension for each batch
+        # var across seq_len dimension: (batch_size, 3)
+        coord_variance = torch.var(spatial_coords, dim=1)  # (batch_size, 3)
+        
+        # Return mean variance across all batches and spatial dimensions
+        return coord_variance.mean()

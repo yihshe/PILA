@@ -39,12 +39,13 @@ class GPSDataLoader(BaseDataLoader):
 
 class GPSSeqDataLoader(BaseDataLoader):
     """
-    GPS data loading demo using BaseDataLoader
+    GPS data loading demo using BaseDataLoader with temporal smoothness support
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, with_const=False):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, with_const=False, 
+                 seq_len=5, mode='train'):
         self.data_dir = data_dir
-        self.dataset = DisplacementGPSSeq(self.data_dir)
+        self.dataset = DisplacementGPSSeq(self.data_dir, seq_len=seq_len, mode=mode)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
 
 class EVIDataLoader(BaseDataLoader):

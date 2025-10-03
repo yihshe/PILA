@@ -83,7 +83,7 @@ BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 
 CSV_PATH0 = os.path.join( 
-    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/0929_132625_kl1_edge0/models',
+    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1002_165450_kl0_edge1_time4_timeinput_false_timeres_true_rank8/models',
     'model_best_testset_analyzer.csv'
 )
 CSV_PATH1 = os.path.join(
@@ -101,7 +101,7 @@ df0 = recale_output(pd.read_csv(CSV_PATH0), MEAN, SCALE)
 df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
 # df2 = recale_output(pd.read_csv(CSV_PATH3), MEAN, SCALE)
 
-SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/0929_132625_kl1_edge0/models', 'plots')
+SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1002_165450_kl0_edge1_time4_timeinput_false_timeres_true_rank8/models', 'plots')
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
@@ -451,22 +451,23 @@ plt.show()
 # %%
 # TODO combine csvs from both train and test sets to plot the gps displacements
 # NOTE: This timeseries plot combining both train and test sets can be done later
-CSV_PATH = os.path.join(
-    BASE_PATH, 'AE_Mogi_corr/0509_102619_smooth', 
-    'model_best_testset_analyzer_train.csv'
-)
-df0_train = recale_output(pd.read_csv(CSV_PATH), MEAN, SCALE)
-df0_full = pd.concat([df0, df0_train], axis=0)
-# select the data from df0_full up to 2014-01-01
-df0_full = df0_full[df0_full['date'] < pd.Timestamp('2013-06-01')]
-df= df0_full
+# CSV_PATH = os.path.join(
+#     BASE_PATH, 'AE_Mogi_corr/0509_102619_smooth', 
+#     'model_best_testset_analyzer_train.csv'
+# )
+# df0_train = recale_output(pd.read_csv(CSV_PATH), MEAN, SCALE)
+# df0_full = pd.concat([df0, df0_train], axis=0)
+# # select the data from df0_full up to 2014-01-01
+# df0_full = df0_full[df0_full['date'] < pd.Timestamp('2013-06-01')]
+# df= df0_full
+df = df0
 # get the last date in the test set
 last_date = df0['date'].max() # 2009-07-29
 # for AV08, AV12 (each row), plot the gps displacements of 'uz' in each column
 # column 1: corrected_output v. target, column 2: init_output v. target, column 3: bias
 # fig, axs = plt.subplots(2, 3, figsize=(30, 10))
 fig, axs = plt.subplots(12, 3, figsize=(30, 60))
-direction = 'ux'
+direction = 'uy'
 # for i, station in enumerate(['AV08', 'AV12']):
 for i, station in enumerate(station_info.keys()):
     for j, attr in enumerate(['init_output', 'bias', 'output']):
@@ -486,9 +487,10 @@ for i, station in enumerate(station_info.keys()):
             x='date', y=f'{attr}_{gps}', data=df, ax=ax, s=15, alpha=0.5,
             color='blue'
         )
-        # kalman filter to fit the curve for init_output
-        smooth_init_output = kalman_filter(df[f'{attr}_{gps}'].values, alpha=0.005)
-        ax.plot(df['date'], smooth_init_output, color='red', linewidth=2)
+        # kalman filter to fit the curve for init_output, 0.005 is the default alpha
+        if attr in ['output', 'init_output']:
+            smooth_init_output = kalman_filter(df[f'{attr}_{gps}'].values, alpha=0.005)
+            ax.plot(df['date'], smooth_init_output, color='red', linewidth=2)
         # plot a blue line to indicate the last date in the test set
         ax.axvline(x=last_date, color='grey', linestyle='-', linewidth=2)
         fontsize = 32

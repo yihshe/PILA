@@ -6,7 +6,13 @@ def nll_loss(output, target):
 
 
 def mse_loss(output, target):
-    return F.mse_loss(output, target)
+    # Sample-wise MSE loss: sum over features, then mean over batch
+    return torch.sum((output - target).pow(2), dim=1).mean()
+
+
+def l1_loss(output, target):
+    # Sample-wise L1 loss: sum over features, then mean over batch
+    return torch.sum(torch.abs(output - target), dim=1).mean()
 
 
 def mse_loss_per_channel(output, target):

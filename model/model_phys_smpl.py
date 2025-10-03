@@ -86,9 +86,10 @@ class Decoders(nn.Module):
         activation = config['arch']['phys_vae']['activation'] #elu 
         no_phy = config['arch']['phys_vae']['no_phy']
         
-        # Get time dimension from config
+        # Get time dimension and usage flags from config
         time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
         self.time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
+        self.use_time_in_input = config['arch']['args'].get('use_time_in_input', False)
         
         # Option to use time features in residual coefficient computation
         self.use_time_in_residual = config['arch']['args'].get('use_time_in_residual', False)
@@ -99,7 +100,8 @@ class Decoders(nn.Module):
                 residual_rank = config['arch']['phys_vae'].get('residual_rank', dim_z_aux)  # Default to dim_z_aux
                 
                 # Linear coefficient transformation: [z_aux, x_P_det, time_feats] -> residual_rank
-                coeff_input_dim = dim_z_aux + in_channels + time_feat_dim  # z_aux + x_P + time_feats
+                # Only add time_feat_dim if use_time_in_residual is True
+                coeff_input_dim = dim_z_aux + in_channels + (time_feat_dim if self.use_time_in_residual else 0)
                 self.coeff = nn.Linear(coeff_input_dim, residual_rank, bias=True)
                 
                 # Per-direction scale parameters
@@ -211,15 +213,18 @@ class FeatureExtractor(nn.Module):
         num_units_feat = config['arch']['phys_vae']['num_units_feat']#64
         activation = config['arch']['phys_vae']['activation']#elu
         
-        # Get time dimension from config
+        # Get time dimension and usage flags from config
         time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
         self.time_feat_dim = time_feat_dim
+        self.use_time_in_input = config['arch']['args'].get('use_time_in_input', False)
     
         # Feature extractor now projects (in_channels + time_feat_dim) -> num_units_feat
-        self.func_feat = MLP([in_channels + time_feat_dim,]+hidlayers_feat+[num_units_feat,], activation)
+        # Only add time_feat_dim if use_time_in_input is True
+        input_dim = in_channels + (time_feat_dim if self.use_time_in_input else 0)
+        self.func_feat = MLP([input_dim,]+hidlayers_feat+[num_units_feat,], activation)
 
     def forward(self, x:torch.Tensor, t:torch.Tensor=None):
-        if t is not None and self.time_feat_dim > 0:
+        if t is not None and self.time_feat_dim > 0 and self.use_time_in_input:
             # Use only the first time_feat_dim elements of the 4-dim time features
             t_sliced = t[..., :self.time_feat_dim]
             x = torch.cat([x, t_sliced], dim=-1)
@@ -464,7 +469,7 @@ class PHYS_VAE_SMPL(nn.Module):
 
         return z_phy, z_aux  # Return z_aux (unbounded) instead of z_aux
 
-    def  decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None, use_inference_values:bool=False, detach_x_P_for_bias:bool=True):
+    def decode(self, z_phy:torch.Tensor, z_aux:torch.Tensor, epoch:int=0, epochs_pretrain:int=20, full:bool=False, const:dict=None, use_inference_values:bool=False, detach_x_P_for_bias:bool=True):
         """
         CORRECTED: z_aux (unbounded) -> c = tanh(z_aux/tau) -> delta = c@B.T
         x_PB = x_P + r(t) * delta
@@ -506,9 +511,9 @@ class PHYS_VAE_SMPL(nn.Module):
         else:
             return x_PB
 
-    def forward(self, x:torch.Tensor, reconstruct:bool=True, hard_z:bool=False,
+    def forward(self, x:torch.Tensor, t:torch.Tensor=None, reconstruct:bool=True, hard_z:bool=False,
                 inference:bool=False, const:dict=None, epoch:int=0, epochs_pretrain:int=20):
-        z_phy_stat, z_aux_stat = self.encode(x)
+        z_phy_stat, z_aux_stat = self.encode(x, t)
 
         if not reconstruct:
             return z_phy_stat, z_aux_stat

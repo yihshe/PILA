@@ -7,8 +7,9 @@
             "physics": "Mogi",
             "input_dim": 36,
             "hidden_dim": 4,
-            "time_feat_dim": 0,
-            "use_time_in_residual": false,
+            "time_feat_dim": 4,
+            "use_time_in_input": false,
+            "use_time_in_residual": true,
             "mogi_paras": "configs/mogi_paras.json",
             "station_info": "configs/station_info.json",
             "standardization": {
@@ -103,6 +104,7 @@
             "beta_aux": 1.0,
             "edge_penalty_weight": 0.0,
             "edge_penalty_power": 1.0,
+            "temporal_smoothness_weight": 0.0,
             "use_ema_prior": false,
             "ema_momentum": 0.999
         }

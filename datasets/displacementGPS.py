@@ -73,31 +73,43 @@ class DisplacementGPS(data.Dataset):
         date_str = sample[-3]  # Assuming date is in the last column
         time_features = time_feats(date_str, time_feat_dim=4)  # Always generate 4-dim features
         data_dict['time_feats'] = torch.tensor(time_features).to(torch.float32)
-        
-        # Keep existing sin_date, cos_date for backward compatibility
-        for k in ['sin_date', 'cos_date']:
-            data_dict[k] = torch.tensor(
-                sample[k].astype('float32')
-            ).to(torch.float32).unsqueeze(0)
 
         return data_dict
 
-# dataset by slicing data into sequences
+# dataset by slicing data into sequences with temporal smoothness
 class DisplacementGPSSeq(data.Dataset):
-    def __init__(self, csv_path, seq_len=5, step_size=5):
+    def __init__(self, csv_path, seq_len=7, mode='train'):
         super(DisplacementGPSSeq, self).__init__()
         self.seq_len = seq_len
-        self.step_size = step_size
+        self.mode = mode  # 'train' or 'inference'
         self.data_df = pd.read_csv(os.path.join(PARENT_DIR, csv_path))
         self.data_df['date'] = pd.to_datetime(self.data_df['date'])
         self.data_df = self.data_df.sort_values(by='date')
 
     def __len__(self):
-        return (len(self.data_df) - self.seq_len) // self.step_size + 1
+        if self.mode == 'inference':
+            # Non-overlapping sequences for inference
+            return len(self.data_df) // self.seq_len
+        else:
+            # Overlapping sequences for training
+            return max(1, len(self.data_df) - self.seq_len + 1)
 
     def __getitem__(self, idx):
-        index = idx * self.step_size
-        sample = self.data_df.iloc[index:index+self.seq_len]
+        if self.mode == 'inference':
+            # Non-overlapping sequences for inference (no repeated dates)
+            start_idx = idx * self.seq_len
+            end_idx = start_idx + self.seq_len
+            if end_idx > len(self.data_df):
+                # Handle the last incomplete sequence
+                start_idx = max(0, len(self.data_df) - self.seq_len)
+                end_idx = len(self.data_df)
+            sample = self.data_df.iloc[start_idx:end_idx]
+        else:
+            # Random overlapping sequences for training
+            max_start_idx = len(self.data_df) - self.seq_len
+            start_idx = np.random.randint(0, max_start_idx + 1)
+            sample = self.data_df.iloc[start_idx:start_idx+self.seq_len]
+        
         data_dict = {}
         data_dict['displacement'] = torch.tensor(
             sample.iloc[:, :36].values.astype('float32')
@@ -116,11 +128,5 @@ class DisplacementGPSSeq(data.Dataset):
         data_dict['time_feats'] = torch.tensor(
             np.array(time_features_list, dtype=np.float32)
         ).to(torch.float32)
-        
-        # Keep existing sin_date, cos_date for backward compatibility
-        for k in ['sin_date', 'cos_date']:
-            data_dict[k] = torch.tensor(
-                sample[k].values.astype('float32')
-            ).to(torch.float32)
 
         return data_dict

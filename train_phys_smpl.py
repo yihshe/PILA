@@ -139,8 +139,14 @@ if __name__ == '__main__':
         # NEW: Time feature arguments
         CustomArgs(['--time_feat_dim'], type=int,
                    target='arch;args;time_feat_dim'),
+        CustomArgs(['--use_time_in_input'], type=str,
+                   target='arch;args;use_time_in_input'),
         CustomArgs(['--use_time_in_residual'], type=str,
                    target='arch;args;use_time_in_residual'),
+        CustomArgs(['--temporal_smoothness_weight'], type=float,
+                   target='trainer;phys_vae;temporal_smoothness_weight'),
+        CustomArgs(['--loss'], type=str,
+                   target='loss'),
     ]
     config = ConfigParser.from_args(args, options)
     

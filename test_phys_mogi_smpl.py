@@ -136,14 +136,26 @@ def main(config, args: argparse.Namespace):
                 input_const = {k: data_dict[k].to(device) for k in input_const_keys}
             else:
                 input_const = None
+            
+            # Get time features if available
+            time_feats = data_dict.get('time_feats', None)
+            if time_feats is not None:
+                time_feats = time_feats.to(device)
+                if time_feats.dim() == 3:  # For sequence data
+                    time_feats = time_feats.view(-1, time_feats.size(-1))
+            
+            if data.dim() == 3:
+                sequence_len = data.size(1)
+                data = data.view(-1, data.size(-1))
+            
             # forward pass 
             # Determine hard_z based on whether KL term was used during training
             # Check if model was trained with KL term by looking at config
-            use_kl_term = config.config['trainer']['phys_vae'].get('use_kl_term', True)
+            use_kl_term = config.config['trainer']['phys_vae'].get('use_kl_term', False)
             use_deterministic = not use_kl_term  # Use deterministic sampling when KL term was disabled
             
             # Model returns: z_phy, z_aux, x_PB (physics+bias), x_P (raw physics)
-            latent_phy, latent_aux, x_PB, x_P = model(data, inference=True, hard_z=use_deterministic, const=input_const)
+            latent_phy, latent_aux, x_PB, x_P = model(data, t=time_feats, inference=True, hard_z=use_deterministic, const=input_const)
 
             if not no_phy:
                 latent_phy = model.physics_model.rescale(latent_phy)
