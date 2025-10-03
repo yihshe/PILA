@@ -149,13 +149,15 @@ def main(config, args: argparse.Namespace):
                 data = data.view(-1, data.size(-1))
             
             # forward pass 
-            # Determine hard_z based on whether KL term was used during training
-            # Check if model was trained with KL term by looking at config
-            use_kl_term = config.config['trainer']['phys_vae'].get('use_kl_term', False)
-            use_deterministic = not use_kl_term  # Use deterministic sampling when KL term was disabled
+            # Determine hard_z based on whether KL terms were used during training
+            # Check if model was trained with KL terms by looking at config
+            use_kl_term_z_phy = config.config['trainer']['phys_vae'].get('use_kl_term_z_phy', False)
+            use_kl_term_z_aux = config.config['trainer']['phys_vae'].get('use_kl_term_z_aux', False)
+            hard_z_phy = not use_kl_term_z_phy  # Use deterministic sampling when KL term was disabled
+            hard_z_aux = not use_kl_term_z_aux  # Use deterministic sampling when KL term was disabled
             
             # Model returns: z_phy, z_aux, x_PB (physics+bias), x_P (raw physics)
-            latent_phy, latent_aux, x_PB, x_P = model(data, t=time_feats, inference=True, hard_z=use_deterministic, const=input_const)
+            latent_phy, latent_aux, x_PB, x_P = model(data, t=time_feats, inference=True, hard_z_phy=hard_z_phy, hard_z_aux=hard_z_aux, const=input_const)
 
             if not no_phy:
                 latent_phy = model.physics_model.rescale(latent_phy)

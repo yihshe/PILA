@@ -8,7 +8,6 @@
             "input_dim": 36,
             "hidden_dim": 4,
             "time_feat_dim": 4,
-            "use_time_in_input": false,
             "use_time_in_residual": true,
             "mogi_paras": "configs/mogi_paras.json",
             "station_info": "configs/station_info.json",
@@ -19,7 +18,7 @@
         },
         "phys_vae": {
             "no_phy": false,
-            "dim_z_aux": 2,
+            "dim_z_aux": 4,
             "dim_z_phy": 4,
             "activation": "elu",
             "num_units_feat": 128,
@@ -32,7 +31,7 @@
             "hidlayers_z_phy": [
                 128
             ],
-            "residual_rank": 2,
+            "residual_rank": 4,
             "tau_init": 3.0,
             "tau_final": 1.0,
             "tau_warmup_epochs": 20,
@@ -96,8 +95,10 @@
             "balance_gate": 0.001,
             "balance_data_aug": 1.0,
             "balance_residual": 0.001,
-            "use_kl_term": false,
-            "beta_max": 1.0,
+            "use_kl_term_z_phy": false,
+            "beta_max_z_phy": 1.0,
+            "use_kl_term_z_aux": false,
+            "beta_max_z_aux": 1.0,
             "use_capacity_control": false,
             "C_max": 7.0,
             "C_gamma": 10.0,

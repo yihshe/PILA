@@ -89,7 +89,6 @@ class Decoders(nn.Module):
         # Get time dimension and usage flags from config
         time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
         self.time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
-        self.use_time_in_input = config['arch']['args'].get('use_time_in_input', False)
         
         # Option to use time features in residual coefficient computation
         self.use_time_in_residual = config['arch']['args'].get('use_time_in_residual', False)
@@ -213,21 +212,11 @@ class FeatureExtractor(nn.Module):
         num_units_feat = config['arch']['phys_vae']['num_units_feat']#64
         activation = config['arch']['phys_vae']['activation']#elu
         
-        # Get time dimension and usage flags from config
-        time_feat_dim = config['arch']['args'].get('time_feat_dim', 0)
-        self.time_feat_dim = time_feat_dim
-        self.use_time_in_input = config['arch']['args'].get('use_time_in_input', False)
-    
-        # Feature extractor now projects (in_channels + time_feat_dim) -> num_units_feat
-        # Only add time_feat_dim if use_time_in_input is True
-        input_dim = in_channels + (time_feat_dim if self.use_time_in_input else 0)
-        self.func_feat = MLP([input_dim,]+hidlayers_feat+[num_units_feat,], activation)
+        # Feature extractor projects in_channels -> num_units_feat
+        self.func_feat = MLP([in_channels,]+hidlayers_feat+[num_units_feat,], activation)
 
     def forward(self, x:torch.Tensor, t:torch.Tensor=None):
-        if t is not None and self.time_feat_dim > 0 and self.use_time_in_input:
-            # Use only the first time_feat_dim elements of the 4-dim time features
-            t_sliced = t[..., :self.time_feat_dim]
-            x = torch.cat([x, t_sliced], dim=-1)
+        # Time features are not used in the feature extractor input
         return self.func_feat(x) # n x num_units_feat
 
 
@@ -450,16 +439,25 @@ class PHYS_VAE_SMPL(nn.Module):
 
         return z_phy_stat, z_aux_stat
 
-    def draw(self, z_phy_stat:dict, z_aux_stat:dict, hard_z:bool=False):
+    def draw(self, z_phy_stat:dict, z_aux_stat:dict, hard_z_phy:bool=False, hard_z_aux:bool=False):
         """
         Sample in u-space, then squash to z in (0,1).
         z_aux remains in u-space (unbounded) for coefficient computation.
+        
+        Args:
+            hard_z_phy: If True, use deterministic sampling for z_phy (mean)
+            hard_z_aux: If True, use deterministic sampling for z_aux (mean)
         """
-        if not hard_z:
+        # Sample z_phy based on its individual setting
+        if not hard_z_phy:
             u_phy = draw_normal(z_phy_stat['mean'], z_phy_stat['lnvar'])
-            z_aux = draw_normal(z_aux_stat['mean'], z_aux_stat['lnvar'])  # Keep in u-space
         else:
             u_phy = z_phy_stat['mean'].clone()
+            
+        # Sample z_aux based on its individual setting
+        if not hard_z_aux:
+            z_aux = draw_normal(z_aux_stat['mean'], z_aux_stat['lnvar'])  # Keep in u-space
+        else:
             z_aux = z_aux_stat['mean'].clone()
 
         if not self.no_phy:
@@ -511,7 +509,7 @@ class PHYS_VAE_SMPL(nn.Module):
         else:
             return x_PB
 
-    def forward(self, x:torch.Tensor, t:torch.Tensor=None, reconstruct:bool=True, hard_z:bool=False,
+    def forward(self, x:torch.Tensor, t:torch.Tensor=None, reconstruct:bool=True, hard_z_phy:bool=False, hard_z_aux:bool=False,
                 inference:bool=False, const:dict=None, epoch:int=0, epochs_pretrain:int=20):
         z_phy_stat, z_aux_stat = self.encode(x, t)
 
@@ -519,10 +517,10 @@ class PHYS_VAE_SMPL(nn.Module):
             return z_phy_stat, z_aux_stat
         
         if not inference:
-            x_mean = self.decode(*self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z), 
+            x_mean = self.decode(*self.draw(z_phy_stat, z_aux_stat, hard_z_phy=hard_z_phy, hard_z_aux=hard_z_aux), 
                                epoch=epoch, epochs_pretrain=epochs_pretrain, full=False, const=const, use_inference_values=False, detach_x_P_for_bias=self.detach_x_P_for_bias)
             return z_phy_stat, z_aux_stat, x_mean
         else:
-            z_phy, z_aux = self.draw(z_phy_stat, z_aux_stat, hard_z=hard_z)
+            z_phy, z_aux = self.draw(z_phy_stat, z_aux_stat, hard_z_phy=hard_z_phy, hard_z_aux=hard_z_aux)
             x_PB, x_P, _y, _delta, _c = self.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=epochs_pretrain, full=True, const=const, use_inference_values=True, detach_x_P_for_bias=self.detach_x_P_for_bias)
             return z_phy, z_aux, x_PB, x_P  # keep 4-tuple for existing test code

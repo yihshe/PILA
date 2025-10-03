@@ -38,11 +38,17 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.epochs_pretrain = config['trainer']['phys_vae'].get('epochs_pretrain', 0)
         self.dim_z_phy = config['arch']['phys_vae']['dim_z_phy']
 
-        # CHANGED: minimal knobs
+        # CHANGED: separate KL controls for z_phy and z_aux
         self.beta_warmup = config['trainer']['phys_vae'].get('kl_warmup_epochs', 50)  # NEW
         self.gate_loss_weight = config['trainer']['phys_vae'].get('balance_gate', 1e-3)  # NEW
-        self.use_kl_term = config['trainer']['phys_vae'].get('use_kl_term', True)  # NEW
-        self.beta_max = config['trainer']['phys_vae'].get('beta_max', 0.1)  # NEW
+        
+        # Separate KL controls for z_phy
+        self.use_kl_term_z_phy = config['trainer']['phys_vae'].get('use_kl_term_z_phy', False)
+        self.beta_max_z_phy = config['trainer']['phys_vae'].get('beta_max_z_phy', 1.0)
+        
+        # Separate KL controls for z_aux
+        self.use_kl_term_z_aux = config['trainer']['phys_vae'].get('use_kl_term_z_aux', False)
+        self.beta_max_z_aux = config['trainer']['phys_vae'].get('beta_max_z_aux', 1.0)
         
         # ========================================================================
         # CAPACITY CONTROL MODULE (Optional add-on to original implementation)
@@ -128,13 +134,19 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 self.logger.info(f"Epoch {epoch}: Starting training phase, scheduler will control LR")
         
         sequence_len = None
-        # Only compute beta when not in pretraining stage
-        if not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term:
+        # Compute separate beta values for z_phy and z_aux when not in pretraining stage
+        if not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term_z_phy:
             # FIXED: Beta should start from 0 when training begins
             training_epoch = epoch - self.epochs_pretrain
-            beta = self.beta_max * self._linear_annealing_epoch(training_epoch, warmup_epochs=self.beta_warmup)
+            beta_z_phy = self.beta_max_z_phy * self._linear_annealing_epoch(training_epoch, warmup_epochs=self.beta_warmup)
         else:
-            beta = 0.0  # No KL loss during pretraining or when use_kl_term=False
+            beta_z_phy = 0.0  # No KL loss during pretraining or when use_kl_term_z_phy=False
+            
+        if epoch >= self.epochs_pretrain and self.use_kl_term_z_aux:
+            training_epoch = epoch - self.epochs_pretrain
+            beta_z_aux = self.beta_max_z_aux * self._linear_annealing_epoch(training_epoch, warmup_epochs=self.beta_warmup)
+        else:
+            beta_z_aux = 0.0  # No KL loss during pretraining or when use_kl_term_z_aux=False
 
         # NEW: accumulators for u-stats
         u_sum = None
@@ -167,13 +179,17 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 self.model.update_ema_prior(z_phy_stat['mean'], z_phy_stat['lnvar'])
 
             # Draw + decode
-            # Use hard_z=True for pure auto-encoder (deterministic), hard_z=False for VAE (stochastic)
-            use_deterministic = not self.use_kl_term  # Use deterministic sampling when KL term is disabled
-            z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
+            # Use separate deterministic sampling for each latent variable based on their KL term settings
+            hard_z_phy = not self.use_kl_term_z_phy  # Use deterministic sampling when KL term is disabled
+            hard_z_aux = not self.use_kl_term_z_aux  # Use deterministic sampling when KL term is disabled
+            z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z_phy=hard_z_phy, hard_z_aux=hard_z_aux)
             x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
 
             # Losses - Get separate KL terms for flexible combination
             rec_loss, kl_u_phy, kl_z_aux = self._vae_loss(data, z_phy_stat, z_aux_stat, x_PB)
+            
+            # Calculate weighted KL loss
+            kl_loss = beta_z_phy * kl_u_phy + beta_z_aux * kl_z_aux
             
             # ========================================================================
             # KL LOSS COMBINATION: Choose between original and capacity control modes
@@ -218,7 +234,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 # ========================================================================
                 # LOSS CALCULATION: Choose between original and capacity control modes
                 # ========================================================================
-                if self.use_capacity_control and not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term:
+                if self.use_capacity_control and not self.no_phy and epoch >= self.epochs_pretrain and self.use_kl_term_z_phy:
                     # --- CAPACITY CONTROL MODE ---
                     training_epoch = epoch - self.epochs_pretrain
                     warm = max(1, self.beta_warmup)  # your existing warmup (e.g., 50)
@@ -226,8 +242,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
                     C_t = min(self.C_max, self.C_max * training_epoch / warm)   # 0 -> C_max
                     capacity_penalty = self.C_gamma * (kl_u_phy - C_t)**2
                     
-                    # Auxiliary KL stays simple
-                    aux_term = self.beta_aux * kl_z_aux
+                    # Auxiliary KL with separate control
+                    aux_term = beta_z_aux * kl_z_aux
                     
                     # Capacity control loss
                     loss = (rec_loss
@@ -240,8 +256,9 @@ class PhysVAETrainerSMPL(BaseTrainer):
                             + self.temporal_smoothness_weight * temporal_smoothness)
                 else:
                     # --- ORIGINAL MODE ---
-                    # Original loss function (preserved exactly as before)
-                    loss = (rec_loss + beta * kl_loss + 
+                    # Original loss function with combined KL loss
+                    loss = (rec_loss + 
+                           kl_loss +
                            self.ortho_penalty_weight * ortho_penalty +
                            self.coeff_penalty_weight * coeff_penalty +
                            self.delta_penalty_weight * delta_penalty +
@@ -272,6 +289,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
             
             self.train_metrics.update('kl_u_phy', kl_u_phy.item())
             self.train_metrics.update('kl_z_aux', kl_z_aux.item())
+            self.train_metrics.update('beta_z_phy', beta_z_phy)
+            self.train_metrics.update('beta_z_aux', beta_z_aux)
             
             self.train_metrics.update('capacity_target', C_t)
             self.train_metrics.update('capacity_penalty', capacity_penalty.item())
@@ -500,9 +519,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
 
                     # Get full model output to compute residual_loss
                     z_phy_stat, z_aux_stat = self.model.encode(data, time_feats)
-                    # Use same hard_z setting as training
-                    use_deterministic = not self.use_kl_term
-                    z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z=use_deterministic)
+                    # Use same hard_z settings as training
+                    hard_z_phy = not self.use_kl_term_z_phy  # Use deterministic sampling when KL term is disabled
+                    hard_z_aux = not self.use_kl_term_z_aux  # Use deterministic sampling when KL term is disabled
+                    z_phy, z_aux = self.model.draw(z_phy_stat, z_aux_stat, hard_z_phy=hard_z_phy, hard_z_aux=hard_z_aux)
                     x_PB, x_P, y, delta, c = self.model.decode(z_phy, z_aux, epoch=epoch, epochs_pretrain=self.epochs_pretrain, full=True, const=input_const)
                     
                     # Use unified VAE loss function (same as training)
