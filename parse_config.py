@@ -146,6 +146,12 @@ def _update_config(config, modification):
             if k == 'trainer;phys_vae;use_kl_term':
                 if isinstance(v, str):
                     v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'trainer;phys_vae;use_kl_term_z_phy':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'trainer;phys_vae;use_kl_term_z_aux':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
             elif k == 'arch;phys_vae;detach_x_P_for_bias':
                 if isinstance(v, str):
                     v = v.lower() in ('true', '1', 'yes', 'on')
@@ -153,6 +159,9 @@ def _update_config(config, modification):
                 if isinstance(v, str):
                     v = v.lower() in ('true', '1', 'yes', 'on')
             elif k == 'trainer;phys_vae;use_capacity_control':
+                if isinstance(v, str):
+                    v = v.lower() in ('true', '1', 'yes', 'on')
+            elif k == 'arch;args;use_time_in_residual':
                 if isinstance(v, str):
                     v = v.lower() in ('true', '1', 'yes', 'on')
             _set_by_path(config, k, v)

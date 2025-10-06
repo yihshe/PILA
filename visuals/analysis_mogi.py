@@ -83,7 +83,7 @@ BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 
 CSV_PATH0 = os.path.join( 
-    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1002_165450_kl0_edge1_time4_timeinput_false_timeres_true_rank8/models',
+    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1003_165900_klp0_edge1_kla0_time4_timeres_false_rank4/models',
     'model_best_testset_analyzer.csv'
 )
 CSV_PATH1 = os.path.join(
@@ -101,7 +101,7 @@ df0 = recale_output(pd.read_csv(CSV_PATH0), MEAN, SCALE)
 df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
 # df2 = recale_output(pd.read_csv(CSV_PATH3), MEAN, SCALE)
 
-SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1002_165450_kl0_edge1_time4_timeinput_false_timeres_true_rank8/models', 'plots')
+SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1003_165900_klp0_edge1_kla0_time4_timeres_false_rank4/models', 'plots')
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
@@ -173,7 +173,7 @@ df = df0
 # color = 'red'
 color = 'blue'
 ylabel = '$X_{\mathrm{GPS, C}}$'
-token = 'output'
+token = 'init_output'
 for direction in ['ux', 'uy', 'uz']:
     fig, axs = plt.subplots(3, 4, figsize=(24, 16))
     for i, station in enumerate(station_info.keys()):
@@ -451,6 +451,7 @@ plt.show()
 # %%
 # TODO combine csvs from both train and test sets to plot the gps displacements
 # NOTE: This timeseries plot combining both train and test sets can be done later
+# NOTE: NOW BEING USED
 # CSV_PATH = os.path.join(
 #     BASE_PATH, 'AE_Mogi_corr/0509_102619_smooth', 
 #     'model_best_testset_analyzer_train.csv'
@@ -510,4 +511,182 @@ plt.tight_layout()
 plt.savefig(os.path.join(
     SAVE_PATH, f'{direction}_mogi_v_bias_v_corr_gps_date.png'))
 plt.show()
+
+# %%
+# NOTE: NOW BEING USED
+# Simple visualization of latent auxiliary variables
+def visualize_latent_aux_simple(
+    df,
+    save_path=None,
+    n_neighbors=15,
+    min_dist=0.1,
+    metric='euclidean',
+    standardize=True,
+):
+    """
+    Simple latent_aux visualization.
+    - 2 variables: direct 2D scatter
+    - >2 variables: UMAP to 2D
+    Points colored by phases: pre / inflation / post.
+    """
+    latent_aux_cols = [col for col in df.columns if col.startswith('latent_aux_')]
+    n_aux = len(latent_aux_cols)
+    if n_aux == 0:
+        print("No latent auxiliary variables found in the dataframe.")
+        return
+
+    aux_data = df[latent_aux_cols].values.astype(np.float32, copy=False)
+    if standardize:
+        mean = np.mean(aux_data, axis=0, keepdims=True)
+        std = np.std(aux_data, axis=0, keepdims=True)
+        std[std == 0] = 1.0
+        aux_data = (aux_data - mean) / std
+
+    dates = pd.to_datetime(df['date'], format='%Y.%m.%d')
+    phase = np.where(dates < INFLATION_START, 'pre', np.where(dates > INFLATION_END, 'post', 'inflation'))
+    phase_to_color = {'pre': 'gray', 'inflation': 'crimson', 'post': 'navy'}
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+
+    if n_aux == 2:
+        for p in ['pre', 'inflation', 'post']:
+            mask = (phase == p)
+            ax.scatter(aux_data[mask, 0], aux_data[mask, 1], s=14, alpha=0.65, c=phase_to_color[p], label=p)
+        ax.set_xlabel('latent_aux_1', fontsize=14)
+        ax.set_ylabel('latent_aux_2', fontsize=14)
+        ax.set_title('Latent Auxiliary Variables (2D)', fontsize=16)
+        ax.legend(title='Phase')
+    else:
+        import umap
+        X = np.ascontiguousarray(aux_data, dtype=np.float32)
+        finite_mask = np.all(np.isfinite(X), axis=1)
+        if not np.all(finite_mask):
+            print(f"UMAP: filtering out {X.shape[0] - np.count_nonzero(finite_mask)} non-finite rows")
+        X = X[finite_mask]
+        phase_used = phase[finite_mask]
+
+        # Minimal compatibility shim for sklearn check_array (for version mismatches)
+        try:
+            import inspect
+            from sklearn.utils import validation as _skval
+            sig = inspect.signature(_skval.check_array)
+            if 'ensure_all_finite' not in sig.parameters:
+                _orig = _skval.check_array
+                def _check_array_compat(A, *args, ensure_all_finite=True, **kwargs):
+                    kwargs['force_all_finite'] = ensure_all_finite
+                    return _orig(A, *args, **kwargs)
+                _skval.check_array = _check_array_compat
+                try:
+                    import umap.umap_ as _umap_mod
+                    _umap_mod.check_array = _check_array_compat
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=n_neighbors, min_dist=min_dist, metric=metric)
+        try:
+            emb = reducer.fit_transform(X)
+        except TypeError:
+            reducer.fit(X)
+            emb = reducer.transform(X)
+
+        for p in ['pre', 'inflation', 'post']:
+            mask = (phase_used == p)
+            ax.scatter(emb[mask, 0], emb[mask, 1], s=14, alpha=0.7, c=phase_to_color[p], label=p)
+        ax.set_xlabel('UMAP-1', fontsize=14)
+        ax.set_ylabel('UMAP-2', fontsize=14)
+        ax.set_title('Latent Auxiliary Variables (UMAP 2D)', fontsize=16)
+        ax.legend(title='Phase')
+
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.show()
+
+def visualize_latent_aux_pairwise(df, save_path=None):
+    """
+    Pairwise scatter plots for all latent_aux variables with LaTeX axis labels.
+    """
+    latent_aux_cols = [col for col in df.columns if col.startswith('latent_aux_')]
+    n_aux = len(latent_aux_cols)
+    if n_aux == 0:
+        print("No latent auxiliary variables found in the dataframe.")
+        return
+
+    aux_labels = [f'$Z_{{\\mathrm{{aux,{i+1}}}}}$' for i in range(n_aux)]
+    fig, axs = plt.subplots(n_aux, n_aux, figsize=(4*n_aux, 4*n_aux))
+    for i, attr1 in enumerate(latent_aux_cols):
+        for j, attr2 in enumerate(latent_aux_cols):
+            ax = axs[i, j]
+            sns.scatterplot(x=attr1, y=attr2, data=df, ax=ax, s=8, alpha=0.5)
+            fontsize = 22
+            ax.set_xlabel(aux_labels[j], fontsize=fontsize)
+            ax.set_ylabel(aux_labels[i], fontsize=fontsize)
+            ax.tick_params(axis='both', which='major', labelsize=16)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.show()
+
+def visualize_latent_aux_timeseries(df, save_path=None):
+    """
+    Time series plots for each latent auxiliary variable.
+    One subplot per latent_aux variable, arranged vertically.
+    """
+    latent_aux_cols = [col for col in df.columns if col.startswith('latent_aux_')]
+    n_aux = len(latent_aux_cols)
+    if n_aux == 0:
+        print("No latent auxiliary variables found in the dataframe.")
+        return
+    
+    print(f"Found {n_aux} latent auxiliary variables: {latent_aux_cols}")
+    
+    # Create subplots - one row per latent_aux variable
+    fig, axes = plt.subplots(n_aux, 1, figsize=(15, 3*n_aux))
+    if n_aux == 1:
+        axes = [axes]  # Make it iterable for single subplot
+    
+    dates = pd.to_datetime(df['date'], format='%Y.%m.%d')
+    
+    for i, col in enumerate(latent_aux_cols):
+        ax = axes[i]
+        
+        # Plot the background for inflation period
+        ax.axvspan(INFLATION_START, INFLATION_END, color='pink', alpha=0.4)
+        
+        # Plot the time series
+        sns.scatterplot(x='date', y=col, data=df, ax=ax, s=8, alpha=0.8, color='blue')
+        
+        # Add Kalman filter smooth curve
+        # smooth_values = kalman_filter(df[col].values, alpha=0.002)
+        # ax.plot(dates, smooth_values, color='red', linewidth=2)
+        
+        # Formatting
+        fontsize = 16
+        ax.set_xlabel('Date', fontsize=fontsize)
+        ax.set_ylabel(f'$Z_{{\\mathrm{{aux,{i+1}}}}}$', fontsize=fontsize)
+        ax.tick_params(axis='both', which='major', labelsize=12)
+        
+        # Rotate x-axis labels
+        for tick in ax.get_xticklabels():
+            tick.set_rotation(-20)
+    
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.show()
+
+
+# %%
+# Example usage of the latent auxiliary variables visualization
+# Since you have 8 latent auxiliary variables, the simple function will use UMAP
+
+# Method 1: Simple visualization (UMAP for 8 variables)
+visualize_latent_aux_simple(df0, save_path=os.path.join(SAVE_PATH, 'latent_aux_simple.png'))
+# Method 2: Pairwise scatter plots (like RTM analysis)
+visualize_latent_aux_pairwise(df0, save_path=os.path.join(SAVE_PATH, 'latent_aux_pairwise.png'))
+# Method 3: Time series plots for each latent auxiliary variable
+visualize_latent_aux_timeseries(df0, save_path=os.path.join(SAVE_PATH, 'latent_aux_timeseries.png'))
+
 # %%

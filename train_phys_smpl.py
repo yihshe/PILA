@@ -154,8 +154,10 @@ if __name__ == '__main__':
     
     # Debug: Print updated config values
     print(f"Updated config values:")
-    print(f"  use_kl_term: {config.config['trainer']['phys_vae'].get('use_kl_term', 'NOT_SET')}")
-    print(f"  beta_max: {config.config['trainer']['phys_vae'].get('beta_max', 'NOT_SET')}")
+    print(f"  use_kl_term_z_phy: {config.config['trainer']['phys_vae'].get('use_kl_term_z_phy', 'NOT_SET')}")
+    print(f"  beta_max_z_phy: {config.config['trainer']['phys_vae'].get('beta_max_z_phy', 'NOT_SET')}")
+    print(f"  use_kl_term_z_aux: {config.config['trainer']['phys_vae'].get('use_kl_term_z_aux', 'NOT_SET')}")
+    print(f"  beta_max_z_aux: {config.config['trainer']['phys_vae'].get('beta_max_z_aux', 'NOT_SET')}")
     print(f"  kl_warmup_epochs: {config.config['trainer']['phys_vae'].get('kl_warmup_epochs', 'NOT_SET')}")
     print(f"  epochs_pretrain: {config.config['trainer']['phys_vae'].get('epochs_pretrain', 'NOT_SET')}")
     print(f"  use_ema_prior: {config.config['trainer']['phys_vae'].get('use_ema_prior', 'NOT_SET')}")

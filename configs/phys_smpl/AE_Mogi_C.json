@@ -8,7 +8,7 @@
             "input_dim": 36,
             "hidden_dim": 4,
             "time_feat_dim": 4,
-            "use_time_in_residual": true,
+            "use_time_in_residual": false,
             "mogi_paras": "configs/mogi_paras.json",
             "station_info": "configs/station_info.json",
             "standardization": {
@@ -18,7 +18,7 @@
         },
         "phys_vae": {
             "no_phy": false,
-            "dim_z_aux": 4,
+            "dim_z_aux": 2,
             "dim_z_phy": 4,
             "activation": "elu",
             "num_units_feat": 128,
@@ -31,7 +31,7 @@
             "hidlayers_z_phy": [
                 128
             ],
-            "residual_rank": 4,
+            "residual_rank": 2,
             "tau_init": 3.0,
             "tau_final": 1.0,
             "tau_warmup_epochs": 20,

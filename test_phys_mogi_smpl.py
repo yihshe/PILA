@@ -151,8 +151,17 @@ def main(config, args: argparse.Namespace):
             # forward pass 
             # Determine hard_z based on whether KL terms were used during training
             # Check if model was trained with KL terms by looking at config
-            use_kl_term_z_phy = config.config['trainer']['phys_vae'].get('use_kl_term_z_phy', False)
-            use_kl_term_z_aux = config.config['trainer']['phys_vae'].get('use_kl_term_z_aux', False)
+            # Backward compatibility: handle both old and new config formats
+            if 'use_kl_term' in config.config['trainer']['phys_vae']:
+                # Old config format: use_kl_term applies to both z_phy and z_aux
+                use_kl_term_old = config.config['trainer']['phys_vae']['use_kl_term']
+                use_kl_term_z_phy = use_kl_term_old
+                use_kl_term_z_aux = use_kl_term_old
+            else:
+                # New config format: separate controls for z_phy and z_aux
+                use_kl_term_z_phy = config.config['trainer']['phys_vae'].get('use_kl_term_z_phy', False)
+                use_kl_term_z_aux = config.config['trainer']['phys_vae'].get('use_kl_term_z_aux', False)
+            
             hard_z_phy = not use_kl_term_z_phy  # Use deterministic sampling when KL term was disabled
             hard_z_aux = not use_kl_term_z_aux  # Use deterministic sampling when KL term was disabled
             

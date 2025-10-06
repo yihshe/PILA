@@ -97,6 +97,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
             # NEW: Capacity control metrics
             'kl_u_phy',  # Physics KL in u-space
             'kl_z_aux',  # Auxiliary KL
+            'beta_z_phy',  # Beta weight for z_phy KL term
+            'beta_z_aux',  # Beta weight for z_aux KL term
             'capacity_target',  # Current capacity target C_t
             'capacity_penalty',  # Capacity penalty term
             # NEW: EMA prior metrics
@@ -348,6 +350,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                     log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
                               f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
                               f"KL_u {kl_u_phy.item():.6f} KL_aux {kl_z_aux.item():.6f} "
+                              f"beta_z_phy {beta_z_phy:.3f} beta_z_aux {beta_z_aux:.3f} "
                               f"C_t {C_t:.3f} Cap_pen {capacity_penalty.item():.6f} "
                               f"Edge_pen {edge_penalty.item():.6f} "
                               f"Residual {residual_loss.item():.6f} "
@@ -355,7 +358,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 else:
                     log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
                               f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
-                              f"KL(beta={beta:.3f}) {kl_loss.item():.6f} "
+                              f"KL(beta_z_phy={beta_z_phy:.3f},beta_z_aux={beta_z_aux:.3f}) {kl_loss.item():.6f} "
                               f"Edge_pen {edge_penalty.item():.6f} "
                               f"Residual {residual_loss.item():.6f} "
                               f"residual_rel_diff {residual_rel_diff.item():.2f}%")
@@ -425,7 +428,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
         wandb.log({f'train/{key}': value for key, value in log.items()})
         wandb.log({'train/lr': self.optimizer.param_groups[0]['lr']})
         wandb.log({'train/epoch': epoch})
-        wandb.log({'train/beta': beta})
+        wandb.log({'train/beta_z_phy': beta_z_phy})
+        wandb.log({'train/beta_z_aux': beta_z_aux})
         
         # Additional context for x_p_diff interpretation
         # if log['gate_mean'] > 0.5:
