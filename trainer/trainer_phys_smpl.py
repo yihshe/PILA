@@ -68,7 +68,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
         
         # NEW: Edge penalty for z_phy to avoid extreme values (0, 1)
         self.edge_penalty_weight = config['trainer']['phys_vae'].get('edge_penalty_weight', 0.0)
-        self.edge_penalty_power = config['trainer']['phys_vae'].get('edge_penalty_power', 0.5)
+        self.edge_penalty_power = config['trainer']['phys_vae'].get('edge_penalty_power', 1.0)
         
         # NEW: Temporal smoothness regularization for Mogi source parameters
         self.temporal_smoothness_weight = config['trainer']['phys_vae'].get('temporal_smoothness_weight', 0.0)
@@ -196,8 +196,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
             # ========================================================================
             # KL LOSS COMBINATION: Choose between original and capacity control modes
             # ========================================================================
-            # Original mode: Combine KL terms first, then average (exactly as before)
-            kl_loss = kl_u_phy + kl_z_aux
+            # Original mode: Combine KL terms first, then average (exactly as before)NOTE: effects of this term to be studied further
+            # kl_loss = kl_u_phy + kl_z_aux
 
             # Compute L2 difference between raw physics output and corrected output
             residual_loss = torch.sum((x_PB - x_P).pow(2), dim=1).mean()
@@ -205,7 +205,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
             residual_rel_diff = torch.mean(torch.abs(x_PB - x_P) / (torch.abs(x_P) + 1e-8)) * 100.0
 
             # IMPROVED: Low-rank residual regularization terms
-            if not self.no_phy and epoch >= self.epochs_pretrain:
+            if not self.no_phy and epoch >= self.epochs_pretrain and self.config['arch']['phys_vae']['dim_z_aux'] > 0:
                 # Orthogonality penalty: λ_B ||B^T B - I||_F^2
                 ortho_penalty = self.model.dec.orthogonality_penalty()
                 
@@ -326,7 +326,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 c_norm = torch.norm(c, dim=1).mean().item() if c.numel() > 0 else 0.0
                 delta_norm = torch.norm(delta, dim=1).mean().item()
                 s_norm = torch.norm(self.model.dec.s).item() if hasattr(self.model.dec, 's') else 0.0
-                basis_quality = torch.norm(torch.matmul(self.model.dec.B.T, self.model.dec.B) - torch.eye(self.model.dec.B.shape[1], device=self.model.dec.B.device), p='fro').item()
+                basis_quality = torch.norm(torch.matmul(self.model.dec.B.T, self.model.dec.B) - torch.eye(self.model.dec.B.shape[1], device=self.model.dec.B.device), p='fro').item() if hasattr(self.model.dec, 'B') else 0.0
                 
                 self.train_metrics.update('c_norm', c_norm)
                 self.train_metrics.update('delta_norm', delta_norm)
@@ -580,11 +580,11 @@ class PhysVAETrainerSMPL(BaseTrainer):
                 prior_u_phy_stat['mean'], prior_u_phy_stat['lnvar']
             ).mean()     # a scalar value, average of per-sample KL
         else:
-            KL_u_phy = torch.zeros(n, device=self.device)
+            KL_u_phy = torch.zeros(n, device=self.device).mean()
 
         # Auxiliary KL (per-sample, not averaged yet)
         if pretrain or self.config['arch']['phys_vae']['dim_z_aux'] == 0:
-            KL_z_aux = torch.zeros(n, device=self.device)
+            KL_z_aux = torch.zeros(n, device=self.device).mean()
         else:
             KL_z_aux = kldiv_normal_normal(
                 z_aux_stat['mean'], z_aux_stat['lnvar'],

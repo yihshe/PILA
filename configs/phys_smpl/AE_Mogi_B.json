@@ -29,7 +29,7 @@
             "hidlayers_z_phy": [
                 128
             ],
-            "residual_rank": 2,
+            "residual_rank": 0,
             "tau_init": 3.0,
             "tau_final": 1.0,
             "tau_warmup_epochs": 20,
@@ -86,7 +86,7 @@
         "stablize_grad": true,
         "grad_clip_norm": 1.0,
         "tensorboard": false,
-        "wandb": true,
+        "wandb": false,
         "phys_vae": {
             "epochs_pretrain": 0,
             "kl_warmup_epochs": 50,

@@ -18,14 +18,8 @@ class TimeSeriesEVI(data.Dataset):
     def __getitem__(self, index):
         sample = self.data_df.iloc[index]
         data_dict = {}
-        # data_dict['displacement'] = torch.tensor(
-        #     sample[:36].values.astype('float32')
-        # ).to(torch.float32)
-        # data_dict['date'] = sample[-3]
-        # for k in ['sin_date', 'cos_date']:
-        #     data_dict[k] = torch.tensor(
-        #         sample[k].astype('float32')
-        #     ).to(torch.float32).unsqueeze(0)
-        # return data_dict
-        # TODO return a dictionary with EVI time series data to load
-        pass
+
+        evi_values = sample[:23].values.astype('float32')
+        data_dict['evi'] = torch.tensor(evi_values).to(torch.float32)
+        
+        return data_dict

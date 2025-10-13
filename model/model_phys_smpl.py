@@ -94,7 +94,7 @@ class Decoders(nn.Module):
         self.use_time_in_residual = config['arch']['args'].get('use_time_in_residual', False)
 
         if not no_phy:
-            if dim_z_aux >= 0:
+            if dim_z_aux > 0:
                 # IMPROVED: [z_aux, x_P_det] -> Linear -> c -> tanh(c/tau) -> delta = (c*s)@B.T
                 residual_rank = config['arch']['phys_vae'].get('residual_rank', dim_z_aux)  # Default to dim_z_aux
                 
@@ -475,7 +475,7 @@ class PHYS_VAE_SMPL(nn.Module):
         if not self.no_phy:
             y = self.physics_model(z_phy, const=const) # (n, in_channels)
             x_P = y
-            if self.dim_z_aux >= 0:
+            if self.dim_z_aux > 0:
                 # Compute coefficient from z_aux with temperature annealing
                 x_P_input = x_P.detach() if detach_x_P_for_bias else x_P
                 # Pass time features if available
