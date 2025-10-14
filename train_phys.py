@@ -53,8 +53,11 @@ def main(config):
     # Build optimizer and learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
-    lr_scheduler = config.init_obj(
-        'lr_scheduler', torch.optim.lr_scheduler, optimizer)
+
+    # CHANGED: make scheduler optional
+    lr_scheduler = None
+    if 'lr_scheduler' in config.config:
+        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
     # Initialize Phys-VAE Trainer
     trainer = PhysVAETrainer(
