@@ -122,6 +122,14 @@ class Decoders(nn.Module):
                 
                 # Orthogonality penalty weight
                 self.ortho_penalty_weight = config['arch']['phys_vae'].get('ortho_penalty_weight', 0.1)
+            else:
+                # When dim_z_aux = 0, set default values for tau/r methods to avoid errors
+                self.tau_init = 1.0
+                self.tau_final = 1.0
+                self.tau_warmup_epochs = 0
+                self.r_init = 0.0
+                self.r_final = 0.0
+                self.r_warmup_epochs = 0
         else:
             # no phy
             if dim_z_aux > 0:

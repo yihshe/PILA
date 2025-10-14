@@ -37,6 +37,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
         self.no_phy = config['arch']['phys_vae']['no_phy']
         self.epochs_pretrain = config['trainer']['phys_vae'].get('epochs_pretrain', 0)
         self.dim_z_phy = config['arch']['phys_vae']['dim_z_phy']
+        self.dim_z_aux = config['arch']['phys_vae']['dim_z_aux']
 
         # CHANGED: separate KL controls for z_phy and z_aux
         self.beta_warmup = config['trainer']['phys_vae'].get('kl_warmup_epochs', 50)  # NEW
@@ -347,9 +348,10 @@ class PhysVAETrainerSMPL(BaseTrainer):
             # Logging
             if batch_idx % self.config['trainer']['log_step'] == 0:
                 if self.use_capacity_control:
+                    kl_aux_str = f"KL_aux {kl_z_aux.item():.6f}" if self.dim_z_aux > 0 else "KL_aux 0.0"
                     log_str = (f"Train Ep {epoch} [{batch_idx}/{len(self.data_loader)}] "
                               f"Loss {loss.item():.6f} Rec {rec_loss.item():.6f} "
-                              f"KL_u {kl_u_phy.item():.6f} KL_aux {kl_z_aux.item():.6f} "
+                              f"KL_u {kl_u_phy.item():.6f} {kl_aux_str} "
                               f"beta_z_phy {beta_z_phy:.3f} beta_z_aux {beta_z_aux:.3f} "
                               f"C_t {C_t:.3f} Cap_pen {capacity_penalty.item():.6f} "
                               f"Edge_pen {edge_penalty.item():.6f} "
@@ -381,11 +383,12 @@ class PhysVAETrainerSMPL(BaseTrainer):
         # Log epoch summary including residual_loss and current learning rate
         current_lr = self.optimizer.param_groups[0]['lr']
         if self.use_capacity_control:
+            kl_aux_summary = f"KL_aux: {log['kl_z_aux']:.6f}" if self.dim_z_aux > 0 else "KL_aux: 0.000000"
             summary_str = (f"Epoch {epoch} Summary - "
                           f"Loss: {log['loss']:.6f}, "
                           f"Rec: {log['rec_loss']:.6f}, "
                           f"KL_u: {log['kl_u_phy']:.6f}, "
-                          f"KL_aux: {log['kl_z_aux']:.6f}, "
+                          f"{kl_aux_summary}, "
                           f"C_t: {log['capacity_target']:.3f}, "
                           f"Cap_pen: {log['capacity_penalty']:.6f}, "
                           f"Edge_pen: {log['edge_penalty']:.6f}, "
@@ -402,8 +405,8 @@ class PhysVAETrainerSMPL(BaseTrainer):
                           f"residual_rel_diff: {log['residual_rel_diff']:.2f}%, "
                           f"LR: {current_lr:.6f}")
         
-        # Add r(t) and tau monitoring
-        if not self.no_phy:
+        # Add r(t) and tau monitoring (only when residual components exist)
+        if not self.no_phy and self.dim_z_aux > 0:
             r_value = self.model.dec.get_r(epoch, self.epochs_pretrain)
             tau_value = self.model.dec.get_tau(epoch, self.epochs_pretrain)
             summary_str += f", r(t): {r_value:.3f}, tau: {tau_value:.3f}"
@@ -474,7 +477,7 @@ class PhysVAETrainerSMPL(BaseTrainer):
         
         # Get current tau/r values
         tau_r_values = None
-        if not self.no_phy:
+        if not self.no_phy and self.dim_z_aux > 0:
             tau_r_values = self.model.dec.get_current_tau_r(epoch, self.epochs_pretrain)
         
         state = {

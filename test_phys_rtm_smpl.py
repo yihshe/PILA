@@ -158,11 +158,16 @@ def main(config, args: argparse.Namespace):
                 latent_phy = model.physics_model.rescale(latent_phy)
                 latent = torch.stack([latent_phy[k] for k in latent_phy.keys()], dim=1)
                 bias = None
-                if dim_z_aux >= 0:#TODO in ablation, it is possible that dim_z_aux=-1 but the model still has the bias correction
+                if dim_z_aux > 0:  # Only include residual components when auxiliary latent variables exist
                     bias = x_PB - x_P  # bias = corrected output - raw physics output
                     data_concat(analyzer, 'init_output', x_P)  # raw physics output
                     data_concat(analyzer, 'bias', bias)
                     data_concat(analyzer, 'latent_aux', latent_aux)
+                else:
+                    # When dim_z_aux = 0, no residual correction, so x_PB = x_P
+                    data_concat(analyzer, 'init_output', x_P)  # raw physics output
+                    data_concat(analyzer, 'bias', torch.zeros_like(x_P))  # zero bias
+                    data_concat(analyzer, 'latent_aux', torch.zeros(x_P.shape[0], 0, device=x_P.device))  # empty latent_aux
             else:
                 latent = latent_aux
 
@@ -203,14 +208,20 @@ def main(config, args: argparse.Namespace):
     ))
 
     if not no_phy:
-        if dim_z_aux >=0:
-            columns += ['init_output_'+b for b in S2_BANDS]
-            columns += ['bias_'+b for b in S2_BANDS]
+        # Always include init_output and bias columns for consistency
+        columns += ['init_output_'+b for b in S2_BANDS]
+        columns += ['bias_'+b for b in S2_BANDS]
+        data = torch.hstack((
+            data,
+            analyzer['init_output'],
+            analyzer['bias']
+        ))
+        
+        # Only include latent_aux columns when dim_z_aux > 0
+        if dim_z_aux > 0:
             columns += ['latent_aux_'+str(b+1) for b in range(dim_z_aux)]
             data = torch.hstack((
                 data,
-                analyzer['init_output'],
-                analyzer['bias'],
                 analyzer['latent_aux']
             ))
 

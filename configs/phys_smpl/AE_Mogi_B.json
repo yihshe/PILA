@@ -7,6 +7,8 @@
             "physics": "Mogi",
             "input_dim": 36,
             "hidden_dim": 4,
+            "time_feat_dim": 4,
+            "use_time_in_residual": false,
             "mogi_paras": "configs/mogi_paras.json",
             "station_info": "configs/station_info.json",
             "standardization": {
@@ -43,7 +45,7 @@
         }
     },
     "data_loader": {
-        "type": "GPSSeqDataLoader",
+        "type": "GPSDataLoader",
         "type_test": "GPSDataLoader",
         "args": {
             "data_dir": "data/processed/mogi/train.csv",
@@ -93,14 +95,17 @@
             "balance_gate": 0.001,
             "balance_data_aug": 1.0,
             "balance_residual": 0.001,
-            "use_kl_term": false,
-            "beta_max": 1.0,
+            "use_kl_term_z_phy": false,
+            "beta_max_z_phy": 1.0,
+            "use_kl_term_z_aux": false,
+            "beta_max_z_aux": 1.0,
             "use_capacity_control": false,
             "C_max": 7.0,
             "C_gamma": 10.0,
             "beta_aux": 1.0,
             "edge_penalty_weight": 0.0,
             "edge_penalty_power": 1.0,
+            "temporal_smoothness_weight": 0.0,
             "use_ema_prior": false,
             "ema_momentum": 0.999
         }
