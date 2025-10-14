@@ -20,14 +20,14 @@
             "dim_z_phy": 4,
             "activation": "elu",
             "hidlayers_feat": [
-                32
+                128
             ],
-            "num_units_feat": 64,
+            "num_units_feat": 128,
             "hidlayers_aux2_enc": [
-                32
+                128
             ],
             "hidlayers_z_phy": [
-                32
+                128
             ]
         }
     },
@@ -39,7 +39,7 @@
             "batch_size": 64,
             "shuffle": true,
             "validation_split": 0.0,
-            "num_workers": 0
+            "num_workers": 4
         },
         "data_dir_valid": "data/processed/mogi/valid.csv",
         "data_dir_test": "data/processed/mogi/test.csv"
@@ -47,7 +47,7 @@
     "optimizer": {
         "type": "Adam",
         "args": {
-            "lr": 0.001,
+            "lr": 0.0003,
             "weight_decay": 1e-4,
             "amsgrad": true
         }
@@ -56,10 +56,9 @@
     "loss_test": "mse_loss",
     "metrics": [],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "CosineAnnealingLR",
         "args": {
-            "step_size": 50,
-            "gamma": 0.1
+            "T_max": 100
         }
     },
     "trainer": {

@@ -19,14 +19,14 @@
             "dim_z_phy": 7,
             "activation": "elu",
             "hidlayers_feat": [
-                32
+                128
             ],
-            "num_units_feat": 64,
+            "num_units_feat": 128,
             "hidlayers_aux2_enc": [
-                32
+                128
             ],
             "hidlayers_z_phy": [
-                32
+                128
             ]
         }
     },
@@ -46,7 +46,7 @@
     "optimizer": {
         "type": "Adam",
         "args": {
-            "lr": 0.001,
+            "lr": 0.0003,
             "weight_decay": 0.0001,
             "amsgrad": true
         }
@@ -54,20 +54,19 @@
     "loss": "mse_loss",
     "metrics": [],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "CosineAnnealingLR",
         "args": {
-            "step_size": 50,
-            "gamma": 0.1
+            "T_max": 150
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 150,
         "save_dir": "saved/rtm",
         "save_period": 10,
         "log_step": 5,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 10,
+        "early_stop": 100,
         "input_key": "spectrum",
         "output_key": "spectrum",
         "input_const_keys": [
