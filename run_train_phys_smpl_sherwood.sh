@@ -100,9 +100,9 @@ echo "Using Python: $PYTHON_CMD"
 #         --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1014_004110_kl0_edge1_LAIu3/models/model_best.pth  \
 #         # --insitu
 
-$PYTHON_CMD -m test_phys_rtm \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/model_best.pth  
+# $PYTHON_CMD -m test_phys_rtm \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/model_best.pth  
 
 
 # #---------------ALL EXPERIMENTS-----------------
@@ -120,3 +120,47 @@ $PYTHON_CMD -m test_phys_rtm \
 # python train_phys_smpl.py --config configs/phys_smpl/AE_Mogi_A.json
 # python train_phys_smpl.py --config configs/phys_smpl/AE_Mogi_B.json
 # python train_phys_smpl.py --config configs/phys_smpl/AE_Mogi_C.json
+
+# #---------------EXPERIMENTS LoRA Inversion Mogi-----------------
+# # Mogi main results
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 4 --residual_rank 4
+
+# # Mogi PhysVAE baseline
+# $PYTHON_CMD -m train_phys --config configs/phys/AE_Mogi_C.json
+
+# # Mogi Physics only baseline
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_B.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 
+
+# # Mogi residual rank experiments
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 1 --residual_rank 1
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 2 --residual_rank 2
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 6 --residual_rank 6
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 8 --residual_rank 8
+
+#---------------EXPERIMENTS LoRA Inversion RTM-----------------
+# RTM main results
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term_z_phy false --edge_penalty_weight 1.0 --dim_z_aux 2 --residual_rank 2
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_wytham.json --use_kl_term_z_phy false --edge_penalty_weight 1.0 --dim_z_aux 2 --residual_rank 2
+
+# RTM PhysVAE baseline
+$PYTHON_CMD -m train_phys --config configs/phys/AE_RTM_C_austria.json
+
+# $PYTHON_CMD -m train_phys --config configs/phys/AE_RTM_C_wytham.json
+
+# RTM Physics only baseline
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_austria.json --use_kl_term_z_phy false --edge_penalty_weight 1.0
+
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_wytham.json --use_kl_term_z_phy false --edge_penalty_weight 1.0
+
+# RTM prior KL term experiments
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term_z_phy true --beta_max_z_phy 1.0 --dim_z_aux 2 --residual_rank 2
+
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term_z_phy true --beta_max_z_phy 0.1 --dim_z_aux 2 --residual_rank 2
+
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term_z_phy true --beta_max_z_phy 0.01 --dim_z_aux 2 --residual_rank 2
+
+$PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_C_austria.json --use_kl_term_z_phy true --beta_max_z_phy 0.01 --edge_penalty_weight 1.0 --dim_z_aux 2 --residual_rank 2

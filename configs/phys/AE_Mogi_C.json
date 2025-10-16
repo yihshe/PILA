@@ -62,13 +62,13 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 150,
         "save_dir": "saved/mogi",
         "save_period": 10,
         "log_step": 5,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 50,
+        "early_stop": 100,
         "input_key": "displacement",
         "output_key": "displacement",
         "stablize_grad": true,

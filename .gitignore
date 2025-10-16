@@ -113,6 +113,7 @@ ENV/
 # data/
 input/
 saved/
+saved_archived/
 wandb/
 data/raw/wytham
 data/processed/rtm/wytham/
