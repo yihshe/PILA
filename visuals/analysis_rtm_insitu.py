@@ -21,7 +21,7 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer_frm4veg.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior/0406_114131/model_best_testset_analyzer_frm4veg.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer_frm4veg.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/model_best_testset_analyzer_frm4veg.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/model_best_testset_analyzer_frm4veg.csv')
 
 
 CSV_PATH_INSITU = '/maps/ys611/MAGIC/data/raw/wytham/csv_preprocessed_data/frm4veg_insitu.csv'
@@ -33,7 +33,7 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots_frm4veg')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots_frm4veg')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots_frm4veg')
-                        'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/plots_frm4veg')
+                        'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/plots_frm4veg')
 
 
 
@@ -84,11 +84,11 @@ for x in ['target', 'output']:
 df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
 df2[[f'bias_{band}' for band in S2_BANDS]] = df2[[f'bias_{band}' for band in S2_BANDS]]*SCALE# df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
     
-# dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
-#          '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
-#          '2018.07.11', '2018.07.24', '2018.08.05', '2018.09.02', '2018.09.27', 
-#          '2018.10.09', '2018.10.19', '2018.10.22']
-dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
+dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
+         '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
+         '2018.07.11', '2018.07.24', '2018.08.05', '2018.09.02', '2018.09.27', 
+         '2018.10.09', '2018.10.19', '2018.10.22']
+# dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
 
 def r_square(y, y_hat):
     ss_res = np.sum((y - y_hat) ** 2)

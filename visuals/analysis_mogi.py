@@ -83,7 +83,7 @@ BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 
 CSV_PATH0 = os.path.join( 
-    BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1013_164113_klp0_edge10_kla1_rank8_delta_penalty0/models',
+    BASE_PATH, 'PHYS_VAE_MOGI_C/1016_134316_absweight0.1_xlnvar-9/models',
     'model_best_testset_analyzer.csv'
 )
 CSV_PATH1 = os.path.join(
@@ -101,7 +101,7 @@ df0 = recale_output(pd.read_csv(CSV_PATH0), MEAN, SCALE)
 df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
 # df2 = recale_output(pd.read_csv(CSV_PATH3), MEAN, SCALE)
 
-SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C_SMPL/1013_164113_klp0_edge10_kla1_rank8_delta_penalty0/models', 'plots')
+SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C/1016_134316_absweight0.1_xlnvar-9/models', 'plots')
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
@@ -173,7 +173,7 @@ df = df0
 # color = 'red'
 color = 'blue'
 ylabel = '$X_{\mathrm{GPS, C}}$'
-token = 'output'
+token = 'init_output'
 for direction in ['ux', 'uy', 'uz']:
     fig, axs = plt.subplots(3, 4, figsize=(24, 16))
     for i, station in enumerate(station_info.keys()):

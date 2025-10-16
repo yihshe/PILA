@@ -75,10 +75,10 @@
             "epochs_pretrain": 0,
             "x_lnvar": -9.0,
             "balance_kld": 1,
-            "balance_lact_enc": 0.1,
-            "balance_unmix": 0.1,
-            "balance_data_aug": 0.1,
-            "balance_lact_dec": 0.1
+            "balance_lact_enc": 0.01,
+            "balance_unmix": 0.01,
+            "balance_data_aug": 0.01,
+            "balance_lact_dec": 0.01
         }
     }
 }

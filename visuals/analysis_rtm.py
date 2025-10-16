@@ -23,7 +23,9 @@ CSV_PATH2 = os.path.join(
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/model_best_testset_analyzer.csv')
+    # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/model_best_testset_analyzer.csv')
+    # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -42,7 +44,9 @@ SAVE_PATH = os.path.join(BASE_PATH,
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3/models/plots')
+                        # 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/plots')
+                        # 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/plots')
+                        'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/plots')
 
 
 
@@ -55,7 +59,7 @@ S2_names = {
     'B09_WV': 'B9', 'B11_SWI1': 'B11', 'B12_SWI2': 'B12'
 }
 
-rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_v2.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
+rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
 
 ATTRS = list(rtm_paras.keys())
 # for each attr in ATTRS, create a LaTex variable name like $Z_{\mathrm{attr}}$
@@ -75,9 +79,13 @@ df0 = pd.read_csv(CSV_PATH0)
 df1 = pd.read_csv(CSV_PATH1)
 df2 = pd.read_csv(CSV_PATH2)
 # df3 = pd.read_csv(CSV_PATH3)
+
 # retrieve the target and output bands to original scale
 MEAN = np.load('/maps/ys611/MAGIC/data/processed/rtm/real/train_x_mean.npy')
 SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/real/train_x_scale.npy')
+# MEAN = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_mean.npy')
+# SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_scale.npy')
+
 for x in ['target', 'output']:
     df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
     df2[[f'{x}_{band}' for band in S2_BANDS]] = df2[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
@@ -102,14 +110,16 @@ coniferous = ['Pseudotsuga menziesii', 'Picea abies', 'Pinus nigra',
               'Larix decidua', 'Pinus sylvestris']
 deciduous = ['Prunus spp', 'Fagus sylvatica', 'Carpinus betulus', 'Quercus spp', 
              'Acer pseudoplatanus', 'Fraxinus excelsior', 'Alnus glutinosa']
-# dates = ['2018.04.08', '2018.04.21', '2018.05.06', '2018.07.02', '2018.08.09', 
-#          '2018.08.21', '2018.08.29', '2018.09.13', '2018.09.18', '2018.09.28', 
-#          '2018.09.30', '2018.10.05', '2018.10.10', '2018.10.30']
+# Austria
+dates = ['2018.04.08', '2018.04.21', '2018.05.06', '2018.07.02', '2018.08.09', 
+         '2018.08.21', '2018.08.29', '2018.09.13', '2018.09.18', '2018.09.28', 
+         '2018.09.30', '2018.10.05', '2018.10.10', '2018.10.30']
+# Wytham
 # dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
 #          '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
 #          '2018.07.11', '2018.07.24', '2018.08.05', '2018.09.02', '2018.09.27', 
 #          '2018.10.09', '2018.10.19', '2018.10.22']
-dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
+# dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
 
 def r_square(y, y_hat):
     ss_res = np.sum((y - y_hat) ** 2)
@@ -571,7 +581,7 @@ df = df2
 # color = 'red'
 color = 'blue'
 label = '$X_{\mathrm{S2, B}}$' 
-token = 'output'
+token = 'init_output'
 for i, band in enumerate(S2_BANDS):
     ax = axs[i//4, i % 4]
     sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,

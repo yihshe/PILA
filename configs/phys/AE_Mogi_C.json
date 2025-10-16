@@ -1,5 +1,5 @@
 {
-    "name": "PHYS_VAE_Mogi_C_seq",
+    "name": "PHYS_VAE_MOGI_C",
     "n_gpu": 1,
     "arch": {
         "type": "PHYS_VAE",
@@ -32,7 +32,7 @@
         }
     },
     "data_loader": {
-        "type": "GPSSeqDataLoader",
+        "type": "GPSDataLoader",
         "type_test": "GPSDataLoader",
         "args": {
             "data_dir": "data/processed/mogi/train.csv",
@@ -68,7 +68,7 @@
         "log_step": 5,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 10,
+        "early_stop": 50,
         "input_key": "displacement",
         "output_key": "displacement",
         "stablize_grad": true,
