@@ -213,7 +213,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     # Add edge positions (0.01 at start isn't shown, but max value position is at edge)
     x_tick_positions = [(val - x_min) / (x_max - x_min) * (len(x_range) - 1) for val in x_nice_vals]
     ax.set_xticks(x_tick_positions)
-    ax.set_xticklabels([f'{val:.1f}' for val in x_nice_vals], fontsize=15)   # <-- set fontsize
+    ax.set_xticklabels([f'{val:.1f}' for val in x_nice_vals], fontsize=18)   # <-- set fontsize
     
     # Y-axis ticks (gradient variable)
     y_min, y_max = y_range[0], y_range[-1]
@@ -226,29 +226,41 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     
     y_tick_positions = [(val - y_min) / (y_max - y_min) * (len(y_range) - 1) for val in y_nice_vals]
     ax.set_yticks(y_tick_positions)
-    ax.set_yticklabels([f'{val:.1f}' for val in y_nice_vals], fontsize=15)  # <-- set fontsize
+    ax.set_yticklabels([f'{val:.1f}' for val in y_nice_vals], fontsize=18)  # <-- set fontsize
     
     # Invert y-axis so 0.01 is at bottom
     ax.invert_yaxis()
     
-    ax.set_xlabel(xlabel, fontsize=16)
-    ax.set_ylabel(ylabel, fontsize=16)
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
     
     # Build title NOTE edit
     z_var = f'Z_{{\mathrm{{{param_name}}}}}'
     x_var = f'X_{{\mathrm{{{label}}}}}'
     
     if is_standardized:
-        # title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})' + '\n'
-        # title += f'Mean={mean_grad:.3f}, Sat={sat_rate*100:.1f}%'
-        title = fr'$\partial {x_var} / \partial {z_var}$ (Mean={mean_grad:.3f})'
+        title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
+        # Add mean value to upper right corner
+        ax.text(
+            0.95, 0.9, 
+            f'Mean={mean_grad:.3f}', 
+            va='bottom', ha='right', 
+            transform=ax.transAxes, 
+            fontsize=18, fontweight='normal'
+        )
     else:
-        # title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})' + '\n'
-        # title += f'Mean={mean_grad:.6f}'
-        title = fr'$\partial {x_var} / \partial {z_var}$ (Mean={mean_grad:.6f})' 
+        title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
+        # Add mean value to upper right corner
+        ax.text(
+            0.95, 0.9, 
+            f'Mean={mean_grad:.6f}', 
+            va='bottom', ha='right', 
+            transform=ax.transAxes, 
+            fontsize=18, fontweight='normal'
+        )
     
     # ax.set_title(title, fontsize=11, fontweight='bold', pad=8)
-    ax.set_title(title, fontsize=16, fontweight='bold', pad=8)
+    ax.set_title(title, fontsize=18, fontweight='bold', pad=8)
     
     # Get colorbar and set label font size
     cbar = ax.collections[0].colorbar
@@ -259,7 +271,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     #     cbar_label = fr'$\partial {x_var} / \partial {z_var}$'
     # cbar.set_label(cbar_label, fontsize=10)
     # Set font size of colorbar tick labels
-    cbar.ax.tick_params(labelsize=15)
+    cbar.ax.tick_params(labelsize=18)
     
     plt.tight_layout()
     
@@ -267,7 +279,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     os.makedirs(output_dir, exist_ok=True)
     grad_type = 'std' if is_standardized else 'raw'
     filename = f'{grad_type}_{param_name}_{band_name}_fc{int(fc_value*10)}.png'
-    plt.savefig(os.path.join(output_dir, filename), dpi=200, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, filename), dpi=250, bbox_inches='tight')
     plt.close()
 
 
