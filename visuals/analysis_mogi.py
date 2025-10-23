@@ -77,19 +77,19 @@ def kalman_filter(data, alpha=0.002):
     return smooth_state_means
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
+# BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
+BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_B_SMPL/1016_192709/models'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi/0509_103601_smooth'
 # TODO add comparison results for wosmooth case in appendix
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 
 CSV_PATH0 = os.path.join( 
-    BASE_PATH, 'PHYS_VAE_MOGI_C/1016_134316_absweight0.1_xlnvar-9/models',
-    'model_best_testset_analyzer.csv'
+    BASE_PATH, 'model_best_testset_analyzer.csv'
 )
-CSV_PATH1 = os.path.join(
-    BASE_PATH, 'models/PHYS_VAE_Mogi_B_seq/1210_093812',
-    'model_best_testset_analyzer.csv'
-)
+# CSV_PATH1 = os.path.join(
+#     BASE_PATH, 'models/PHYS_VAE_Mogi_B_seq/1210_093812',
+#     'model_best_testset_analyzer.csv'
+# )
 
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
 # CSV_PATH3 = os.path.join(
@@ -98,10 +98,10 @@ CSV_PATH1 = os.path.join(
 # )
 
 df0 = recale_output(pd.read_csv(CSV_PATH0), MEAN, SCALE)
-df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
+# df1 = recale_output(pd.read_csv(CSV_PATH1), MEAN, SCALE, corr=False) 
 # df2 = recale_output(pd.read_csv(CSV_PATH3), MEAN, SCALE)
 
-SAVE_PATH = os.path.join(BASE_PATH, 'PHYS_VAE_MOGI_C/1016_134316_absweight0.1_xlnvar-9/models', 'plots')
+SAVE_PATH = os.path.join(BASE_PATH, 'plots')
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
@@ -172,49 +172,51 @@ for direction in ['uz']:
 df = df0
 # color = 'red'
 color = 'blue'
-ylabel = '$X_{\mathrm{GPS, C}}$'
-token = 'init_output'
-for direction in ['ux', 'uy', 'uz']:
-    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
-    for i, station in enumerate(station_info.keys()):
-        ax = axs[i//4, i % 4]
-        gps = f'{direction}_{station}'
-        sns.scatterplot(x='target_'+gps, y=f'{token}_'+gps, data=df, ax=ax, s=8,
-                        alpha=0.5, color=color)
-        # rmse = np.sqrt(np.mean((df[f'target_{gps}'] - df[f'output_{gps}'])**2))
-        r2 = r_square(df[f'target_{gps}'], df[f'{token}_{gps}'])
-        fontsize = 30
-        ax.set_title(station, fontsize=fontsize)
-        xlabel = '$X_{\mathrm{GPS}}$'
-        # ylabel = '$X_{\mathrm{GPS, B}}$'
-        ax.set_xlabel(xlabel, fontsize=fontsize)
-        ax.set_ylabel(ylabel, fontsize=fontsize)
-        # set the same ticks for both x and y axes
-        ax.tick_params(axis='both', which='major', labelsize=25)
-        # plot the diagonal line
-        limits = [
-            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-        ]
-        ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
-        ax.set_xlim(limits)
-        ax.set_ylim(limits)
-        # set the distance between y label and y axis
-        ax.yaxis.labelpad = 10
-        ax.set_aspect('equal')
-        # make sure both axes have same ticks to display
-        ax.locator_params(axis='x', nbins=4)
-        ax.locator_params(axis='y', nbins=4)
-        # make sure all ticks are rounded to 2 decimal places
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-        # set RMSE as a legend
-        # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
-        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(SAVE_PATH, f'{direction}_{token}_target_corr.png'))
-    plt.show()
+# for token in ['output', 'init_output']:
+for token in ['init_output']:
+# token = 'init_output'
+    ylabel = '$X_{\mathrm{GPS, C}}$' if token == 'output' else '$X_{\mathrm{GPS, F}}$'
+    for direction in ['ux', 'uy', 'uz']:
+        fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+        for i, station in enumerate(station_info.keys()):
+            ax = axs[i//4, i % 4]
+            gps = f'{direction}_{station}'
+            sns.scatterplot(x='target_'+gps, y=f'{token}_'+gps, data=df, ax=ax, s=8,
+                            alpha=0.5, color=color)
+            # rmse = np.sqrt(np.mean((df[f'target_{gps}'] - df[f'output_{gps}'])**2))
+            r2 = r_square(df[f'target_{gps}'], df[f'{token}_{gps}'])
+            fontsize = 30
+            ax.set_title(station, fontsize=fontsize)
+            xlabel = '$X_{\mathrm{GPS}}$'
+            # ylabel = '$X_{\mathrm{GPS, B}}$'
+            ax.set_xlabel(xlabel, fontsize=fontsize)
+            ax.set_ylabel(ylabel, fontsize=fontsize)
+            # set the same ticks for both x and y axes
+            ax.tick_params(axis='both', which='major', labelsize=25)
+            # plot the diagonal line
+            limits = [
+                np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+                np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+            ]
+            ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
+            ax.set_xlim(limits)
+            ax.set_ylim(limits)
+            # set the distance between y label and y axis
+            ax.yaxis.labelpad = 10
+            ax.set_aspect('equal')
+            # make sure both axes have same ticks to display
+            ax.locator_params(axis='x', nbins=4)
+            ax.locator_params(axis='y', nbins=4)
+            # make sure all ticks are rounded to 2 decimal places
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            # set RMSE as a legend
+            # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
+            ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(SAVE_PATH, f'{direction}_{token}_target_wocorr.png'))
+        plt.show()
 
 # %% plot the histogram of the four variables
 # NOTE plot with w/o correction case
@@ -493,7 +495,7 @@ for i, station in enumerate(station_info.keys()):
             smooth_init_output = kalman_filter(df[f'{attr}_{gps}'].values, alpha=0.005)
             ax.plot(df['date'], smooth_init_output, color='red', linewidth=2)
         # plot a blue line to indicate the last date in the test set
-        ax.axvline(x=last_date, color='grey', linestyle='-', linewidth=2)
+        # ax.axvline(x=last_date, color='grey', linestyle='-', linewidth=2)
         fontsize = 32
         ax.set_title(station, fontsize=fontsize)
         ax.set_xlabel('Date', fontsize=fontsize)

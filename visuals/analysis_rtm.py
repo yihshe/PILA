@@ -8,24 +8,27 @@ import os
 import json
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1/models'
 # TODO add VanillaAE and NNRegressor for analysis
-CSV_PATH0 = os.path.join(
-    BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
-CSV_PATH1 = os.path.join(
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0329_080231/model_best_testset_analyzer.csv')
-    BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0323_222945/model_best_testset_analyzer.csv')
+# CSV_PATH0 = os.path.join(
+#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
+# CSV_PATH1 = os.path.join(
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0329_080231/model_best_testset_analyzer.csv')
+#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0323_222945/model_best_testset_analyzer.csv')
+# CSV_PATH2 = os.path.join(
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/model_best_testset_analyzer.csv')
+#     # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/model_best_testset_analyzer.csv')
+#     BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/model_best_testset_analyzer.csv')
+
 CSV_PATH2 = os.path.join(
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/checkpoint-epoch100_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/model_best_testset_analyzer.csv')
-    # BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/model_best_testset_analyzer.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/model_best_testset_analyzer.csv')
+    BASE_PATH, 'model_best_testset_analyzer.csv')
 
 # CSV_PATH3 = os.path.join(
 #     BASE_PATH, 'NNRegressor/0124_160519/model_best_testset_analyzer_real.csv')
@@ -36,17 +39,19 @@ CSV_PATH2 = os.path.join(
 # CSV_PATH2 = os.path.join(
 #     BASE_PATH, 'AE_RTM_corr_con/0201_201257/model_best_testset_analyzer.csv')
 
-SAVE_PATH = os.path.join(BASE_PATH, 
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
-                        # 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/plots')
-                        # 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/plots')
-                        'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/plots')
+# SAVE_PATH = os.path.join(BASE_PATH, 
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_SMPL/0610_223805/plots')
+#                         # 'rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1013_223315_kl0_edge1_LAIu3/models/plots')
+#                         # 'rtm/PHYS_VAE_RTM_C_WYTHAM/1014_184524_loss_relative_weight/models/plots')
+#                         'rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_143150/models/plots')
+
+SAVE_PATH = os.path.join(BASE_PATH, 'plots')
 
 
 
@@ -75,8 +80,8 @@ NUM_BINS = 100
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 # read the csv file
-df0 = pd.read_csv(CSV_PATH0)
-df1 = pd.read_csv(CSV_PATH1)
+# df0 = pd.read_csv(CSV_PATH0)
+# df1 = pd.read_csv(CSV_PATH1)
 df2 = pd.read_csv(CSV_PATH2)
 # df3 = pd.read_csv(CSV_PATH3)
 
@@ -87,7 +92,7 @@ SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/real/train_x_scale.npy')
 # SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_scale.npy')
 
 for x in ['target', 'output']:
-    df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
+    # df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
     df2[[f'{x}_{band}' for band in S2_BANDS]] = df2[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
 df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
 df2[[f'bias_{band}' for band in S2_BANDS]] = df2[[f'bias_{band}' for band in S2_BANDS]]*SCALE# df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
@@ -576,56 +581,56 @@ Plot for VanillaAE, AE_RTM, AE_RTM_corr NOTE neurips full plots
 NOTE: NOW BEING USED
 """
 # Scatter plot of the input and reconstructed bands
-fig, axs = plt.subplots(3, 4, figsize=(24, 16))
 df = df2
 # color = 'red'
 color = 'blue'
-label = '$X_{\mathrm{S2, B}}$' 
-token = 'init_output'
-for i, band in enumerate(S2_BANDS):
-    ax = axs[i//4, i % 4]
-    sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
-                    s=8, alpha=0.5, color=color, label=label)
-    # adjust the point size and alpha and color
-    # calculate RMSE and add it to the title
-    # rmse = np.sqrt(np.mean((df[f'target_{band}'] - df[f'output_{band}'])**2))
-    r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
-    fontsize = 30
-    # add the RMSE to the title
-    ax.set_title(S2_names[band], fontsize=fontsize)
-    xlabel = '$X_{\mathrm{S2}}$'
-    ylabel = '$X_{\mathrm{S2, C}}$' 
-    ax.set_xlabel(xlabel, fontsize=fontsize)
-    ax.set_ylabel(ylabel, fontsize=fontsize)
-    # set the same ticks for both x and y axes
-    ax.tick_params(axis='both', which='major', labelsize=25)
-    # plot the diagonal line
-    limits = [
-        np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-        np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-    ]
-    # round the limit ticks to 2 decimal places
-    # limits = [np.round(limits[0], 2), np.round(limits[1], 2)]
-    ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
-    ax.set_xlim(limits)
-    ax.set_ylim(limits)
-    # set the distance between y label and y axis
-    ax.yaxis.labelpad = 10
-    ax.set_aspect('equal')
-    # make sure both axes have same ticks to display
-    ax.locator_params(axis='x', nbins=4)
-    ax.locator_params(axis='y', nbins=4)
-    # make sure all ticks are rounded to 2 decimal places
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-    # set RMSE as a legend
-    # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
-    ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
-# make the last subplot empty
-axs[-1, -1].axis('off')
-plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_corr_target_v_{token}.png'))
-plt.show()
+for token in ['output', 'init_output']:
+    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+    ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
+    for i, band in enumerate(S2_BANDS):
+        ax = axs[i//4, i % 4]
+        sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
+                        s=8, alpha=0.5, color=color)
+        # adjust the point size and alpha and color
+        # calculate RMSE and add it to the title
+        # rmse = np.sqrt(np.mean((df[f'target_{band}'] - df[f'output_{band}'])**2))
+        r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
+        fontsize = 30
+        # add the RMSE to the title
+        ax.set_title(S2_names[band], fontsize=fontsize)
+        xlabel = '$X_{\mathrm{S2}}$'
+        # ylabel = '$X_{\mathrm{S2, C}}$' 
+        ax.set_xlabel(xlabel, fontsize=fontsize)
+        ax.set_ylabel(ylabel, fontsize=fontsize)
+        # set the same ticks for both x and y axes
+        ax.tick_params(axis='both', which='major', labelsize=25)
+        # plot the diagonal line
+        limits = [
+            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+        ]
+        # round the limit ticks to 2 decimal places
+        # limits = [np.round(limits[0], 2), np.round(limits[1], 2)]
+        ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
+        ax.set_xlim(limits)
+        ax.set_ylim(limits)
+        # set the distance between y label and y axis
+        ax.yaxis.labelpad = 10
+        ax.set_aspect('equal')
+        # make sure both axes have same ticks to display
+        ax.locator_params(axis='x', nbins=4)
+        ax.locator_params(axis='y', nbins=4)
+        # make sure all ticks are rounded to 2 decimal places
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+        # set RMSE as a legend
+        # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
+        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
+    # make the last subplot empty
+    axs[-1, -1].axis('off')
+    plt.tight_layout()
+    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}.png'))
+    plt.show()
 
 # %% NOTE neurips changed
 """
@@ -658,12 +663,12 @@ for i, attr in enumerate(ATTRS2):
     std = []
     for date in dates:
         df_filtered = df[df['date']==date]
-        # mean_coniferous.append(df_filtered[df_filtered['class'].isin(coniferous)][f'latent_{attr}'].mean())
-        # std_coniferous.append(df_filtered[df_filtered['class'].isin(coniferous)][f'latent_{attr}'].std())
-        # mean_deciduous.append(df_filtered[df_filtered['class'].isin(deciduous)][f'latent_{attr}'].mean())
-        # std_deciduous.append(df_filtered[df_filtered['class'].isin(deciduous)][f'latent_{attr}'].std())
-        mean.append(df_filtered[f'latent_{attr}'].mean())
-        std.append(df_filtered[f'latent_{attr}'].std())
+        mean_coniferous.append(df_filtered[df_filtered['class'].isin(coniferous)][f'latent_{attr}'].mean())
+        std_coniferous.append(df_filtered[df_filtered['class'].isin(coniferous)][f'latent_{attr}'].std())
+        mean_deciduous.append(df_filtered[df_filtered['class'].isin(deciduous)][f'latent_{attr}'].mean())
+        std_deciduous.append(df_filtered[df_filtered['class'].isin(deciduous)][f'latent_{attr}'].std())
+        # mean.append(df_filtered[f'latent_{attr}'].mean())
+        # std.append(df_filtered[f'latent_{attr}'].std())
     
     # plot the time series of the mean and show the std as error bars
     # map each date to the format like Aug 21, Apr 08, etc.
@@ -671,10 +676,10 @@ for i, attr in enumerate(ATTRS2):
     months = {'04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct'}
     dates_plot = [f"{date.split('.')[2]} {months[date.split('.')[1]]}" for date in dates]
     # df is df3, plot it in the background with a lighter color than df2
-    # ax.errorbar(x=dates_plot, y=mean_coniferous, yerr=std_coniferous, fmt='o', color = 'red', label='Coniferous')
-    # ax.errorbar(x=dates_plot, y=mean_deciduous, yerr=std_deciduous, fmt='o', color = 'blue', label='Deciduous')
+    ax.errorbar(x=dates_plot, y=mean_coniferous, yerr=std_coniferous, fmt='o', color = 'red', label='Coniferous')
+    ax.errorbar(x=dates_plot, y=mean_deciduous, yerr=std_deciduous, fmt='o', color = 'blue', label='Deciduous')
     # ax.errorbar(x=dates_plot, y=mean, yerr=std, fmt='o', color = 'red', label='w/o $\mathbf{C}$')
-    ax.errorbar(x=dates_plot, y=mean, yerr=std, fmt='o', color = 'blue', label='w/ $\mathbf{C}$')
+    # ax.errorbar(x=dates_plot, y=mean, yerr=std, fmt='o', color = 'blue', label='w/ $\mathbf{C}$')
     fontsize = 32
     # ax.set_xlabel('Date', fontsize=fontsize)
     ax.set_ylabel(ATTRS_LATEX[attr], fontsize=fontsize)
@@ -687,8 +692,8 @@ for i, attr in enumerate(ATTRS2):
 
 axs[-1, -1].axis('off')
 plt.tight_layout()
-# plt.savefig(os.path.join(SAVE_PATH, 'timeseries_realset_vars_corr_coniferous_v_deciduous.png'))
-plt.savefig(os.path.join(SAVE_PATH, 'timeseries_realset_vars_corr.png'))
+plt.savefig(os.path.join(SAVE_PATH, 'timeseries_realset_vars_corr_coniferous_v_deciduous.png'))
+# plt.savefig(os.path.join(SAVE_PATH, 'timeseries_realset_vars_corr.png'))
 plt.show()
 
 # %% NEW randomly select five samples and plot the time series of the mean and show the std as error bars for AE_RTM_corr
@@ -759,7 +764,11 @@ NOTE: NOW BEING USED
 """
 # Assuming df2 is your DataFrame, rtm_paras holds parameters, and SAVE_PATH is defined
 ATTRS = list(rtm_paras.keys())
-df = df2
+df = df2.copy()
+
+# Normalize the latent variables to [0, 1] range based on physical ranges
+for attr in ATTRS:
+    df[f'latent_{attr}'] = (df[f'latent_{attr}'] - rtm_paras[attr]['min']) / (rtm_paras[attr]['max'] - rtm_paras[attr]['min'])
 
 species_list = coniferous + deciduous  # Combine your species lists
 means = {}  # Dictionary to store mean vectors
@@ -825,7 +834,7 @@ for i, label in enumerate(ax.get_xticklabels()):
         label.set_color('blue')
 # save the heatmap
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'heatmap_jm_distance_realset_species_wocorr.png'), dpi=300)
+plt.savefig(os.path.join(SAVE_PATH, 'heatmap_jm_distance_realset_species_uniformed.png'), dpi=300)
 plt.show()
 # %% NEW plot the time series of the mean and show the std as error bars for AE_RTM_corr
 df = df2

@@ -8,33 +8,35 @@ import os
 import json
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/'
-CSV_PATH0 = os.path.join(
-    BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
-CSV_PATH1 = os.path.join(
-    BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0329_080231/model_best_testset_analyzer_frm4veg.csv')#NOTE make sure that the value range of LAIu is [0.01, 5]
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0323_222945/model_best_testset_analyzer_frm4veg.csv')
+# BASE_PATH = '/maps/ys611/MAGIC/saved/'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models'
+# CSV_PATH0 = os.path.join(
+#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
+# CSV_PATH1 = os.path.join(
+#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0329_080231/model_best_testset_analyzer_frm4veg.csv')#NOTE make sure that the value range of LAIu is [0.01, 5]
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0323_222945/model_best_testset_analyzer_frm4veg.csv')
+# CSV_PATH2 = os.path.join(
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/model_best_testset_analyzer_frm4veg.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/model_best_testset_analyzer_frm4veg.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/model_best_testset_analyzer_frm4veg.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer_frm4veg.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior/0406_114131/model_best_testset_analyzer_frm4veg.csv')
+#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer_frm4veg.csv')
+#     BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/model_best_testset_analyzer_frm4veg.csv')
 CSV_PATH2 = os.path.join(
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/model_best_testset_analyzer_frm4veg.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/model_best_testset_analyzer_frm4veg.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/model_best_testset_analyzer_frm4veg.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer_frm4veg.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior/0406_114131/model_best_testset_analyzer_frm4veg.csv')
-    # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer_frm4veg.csv')
-    BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/model_best_testset_analyzer_frm4veg.csv')
-
+    BASE_PATH, 'model_best_testset_analyzer_frm4veg.csv')
 
 CSV_PATH_INSITU = '/maps/ys611/MAGIC/data/raw/wytham/csv_preprocessed_data/frm4veg_insitu.csv'
 
-SAVE_PATH = os.path.join(BASE_PATH, 
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots_frm4veg')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots_frm4veg')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots_frm4veg')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots_frm4veg')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots_frm4veg')
-                        # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots_frm4veg')
-                        'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/plots_frm4veg')
-
+# SAVE_PATH = os.path.join(BASE_PATH, 
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots_frm4veg')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots_frm4veg')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots_frm4veg')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots_frm4veg')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots_frm4veg')
+#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots_frm4veg')
+#                         'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/plots_frm4veg')
+SAVE_PATH = os.path.join(BASE_PATH, 'plots_frm4veg')
 
 
 S2_BANDS = ['B02_BLUE', 'B03_GREEN', 'B04_RED', 'B05_RE1', 'B06_RE2',
@@ -45,7 +47,7 @@ S2_names = {
     'B06_RE2': 'B6', 'B07_RE3': 'B7', 'B08_NIR1': 'B8', 'B8A_NIR2': 'B8a',
     'B09_WV': 'B9', 'B11_SWI1': 'B11', 'B12_SWI2': 'B12'
 }
-rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_v2.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
+rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
 # rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_exp.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
 
 ATTRS = list(rtm_paras.keys())
@@ -68,8 +70,8 @@ NUM_BINS = 100
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 # read the csv file
-df0 = pd.read_csv(CSV_PATH0)
-df1 = pd.read_csv(CSV_PATH1)
+# df0 = pd.read_csv(CSV_PATH0)
+# df1 = pd.read_csv(CSV_PATH1)
 df2 = pd.read_csv(CSV_PATH2)
 df_insitu = pd.read_csv(CSV_PATH_INSITU)
 
@@ -79,16 +81,16 @@ df_insitu = pd.read_csv(CSV_PATH_INSITU)
 MEAN = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_mean.npy')
 SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_scale.npy')
 for x in ['target', 'output']:
-    df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
+    # df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
     df2[[f'{x}_{band}' for band in S2_BANDS]] = df2[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
 df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
 df2[[f'bias_{band}' for band in S2_BANDS]] = df2[[f'bias_{band}' for band in S2_BANDS]]*SCALE# df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
     
-dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
-         '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
-         '2018.07.11', '2018.07.24', '2018.08.05', '2018.09.02', '2018.09.27', 
-         '2018.10.09', '2018.10.19', '2018.10.22']
-# dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
+# dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
+#          '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
+#          '2018.07.11', '2018.07.24', '2018.08.05', '2018.09.02', '2018.09.27', 
+#          '2018.10.09', '2018.10.19', '2018.10.22']
+dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
 
 def r_square(y, y_hat):
     ss_res = np.sum((y - y_hat) ** 2)
@@ -181,7 +183,7 @@ for date in dates:
         #             df_merged_filtered[f'{insitu_attr}_pred'].iloc[j], 
         #             plot, fontsize=10)
 
-        # r2 = r_square(df_merged_filtered[f'{insitu_attr}_insitu'], df_merged_filtered[f'{insitu_attr}_pred'])
+        r2 = r_square(df_merged_filtered[f'{insitu_attr}_insitu'], df_merged_filtered[f'{insitu_attr}_pred'])
         fontsize = 25
 
         # ax.set_title(f'{ATTRS_LATEX[attr]} vs {insitu_attr}')
@@ -217,5 +219,124 @@ for date in dates:
     plt.savefig(os.path.join(SAVE_PATH, f'linescatter_corr_insitu_v_pred_{date}.png'))
     plt.show()
 
+# %%
+"""
+Scatter plot of target vs output and target vs init_output bands
+Similar to the analysis in analysis_rtm.py
+"""
+df = df2
+color = 'blue'
+for token in ['output', 'init_output']:
+    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+    ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
+    for i, band in enumerate(S2_BANDS):
+        ax = axs[i//4, i % 4]
+        sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
+                        s=8, alpha=0.5, color=color)
+        # calculate R-squared
+        r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
+        fontsize = 30
+        # add the title
+        ax.set_title(S2_names[band], fontsize=fontsize)
+        xlabel = '$X_{\mathrm{S2}}$'
+        ax.set_xlabel(xlabel, fontsize=fontsize)
+        ax.set_ylabel(ylabel, fontsize=fontsize)
+        # set the same ticks for both x and y axes
+        ax.tick_params(axis='both', which='major', labelsize=25)
+        # plot the diagonal line
+        limits = [
+            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+        ]
+        ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
+        ax.set_xlim(limits)
+        ax.set_ylim(limits)
+        # set the distance between y label and y axis
+        ax.yaxis.labelpad = 10
+        ax.set_aspect('equal')
+        # make sure both axes have same ticks to display
+        ax.locator_params(axis='x', nbins=4)
+        ax.locator_params(axis='y', nbins=4)
+        # make sure all ticks are rounded to 2 decimal places
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+        # set R-squared as a legend
+        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
+    # make the last subplot empty
+    axs[-1, -1].axis('off')
+    plt.tight_layout()
+    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_insitu_bands_target_v_{token}.png'))
+    plt.show()
 
 # %%
+"""
+Time series of latent biophysical variables with mean and std as error bars
+Also overlay in-situ measurements on the plots
+"""
+# Only plot variables that have in-situ measurements
+ATTRS2 = list(ATTRS_INSITU.keys())
+fig, axs = plt.subplots(2, 2, figsize=(20, 16)) 
+df = df2
+
+# Calculate average date for in-situ measurements
+# Assuming in-situ measurements are from around these dates
+insitu_dates = dates  # The 4 dates when measurements were taken
+# Calculate the average in-situ value across all available dates
+insitu_avg = {}
+for attr in ATTRS2:
+    insitu_attr = ATTRS_INSITU[attr]
+    if insitu_attr in df_insitu.columns:
+        insitu_avg[attr] = df_insitu[insitu_attr].mean()
+
+for i, attr in enumerate(ATTRS2):
+    ax = axs[i//2, i % 2]
+    # get the time series of mean and std
+    mean = []
+    std = []
+    for date in dates:
+        df_filtered = df[df['date']==date]
+        mean.append(df_filtered[f'latent_{attr}'].mean())
+        std.append(df_filtered[f'latent_{attr}'].std())
+    
+    # plot the time series of the mean and show the std as error bars
+    # map each date to the format like Aug 21, Apr 08, etc.
+    dates_plot = []
+    months = {'04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct'}
+    dates_plot = [f"{date.split('.')[2]} {months[date.split('.')[1]]}" for date in dates]
+    
+    ax.errorbar(x=dates_plot, y=mean, yerr=std, fmt='o-', color='blue', label='Predicted', markersize=8, linewidth=2)
+    
+    # Add in-situ measurements if available
+    insitu_attr = ATTRS_INSITU[attr]
+    if insitu_attr in df_insitu.columns:
+        # For each date, get the average in-situ measurement
+        insitu_means = []
+        for date in dates:
+            # Get in-situ measurements for this date
+            df_merged_date = pred2insitu(df_insitu, df[df['date']==date], {attr: insitu_attr})
+            if f'{insitu_attr}_insitu' in df_merged_date.columns:
+                insitu_mean = df_merged_date[f'{insitu_attr}_insitu'].mean()
+                insitu_means.append(insitu_mean)
+            else:
+                insitu_means.append(np.nan)
+        
+        # Plot in-situ measurements
+        ax.scatter(x=dates_plot, y=insitu_means, marker='s', s=150, color='red', 
+                   label='In-situ', zorder=5, edgecolors='black', linewidth=1.5)
+    
+    fontsize = 32
+    ax.set_ylabel(ATTRS_LATEX[attr], fontsize=fontsize)
+    # set the range of y axis as the physical range of the variable
+    ax.set_ylim(rtm_paras[attr]['min'], rtm_paras[attr]['max'])
+    ax.legend(fontsize=23, loc='best')
+    ax.tick_params(axis='both', which='major', labelsize=23)
+    # rotate the ticks
+    ax.set_xticklabels(dates_plot, rotation=-45)  
+
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_PATH, 'timeseries_insitu_vars_with_measurements.png'))
+plt.show()
+
+
+# %%
+# TODO how is the spectra recostructed for these regions?
