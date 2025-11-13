@@ -19,6 +19,9 @@ class SpectrumS2(data.Dataset):
         self.attr_info = ['class', 'sample_id', 'date']
         if with_const:
             self.attr_info += ['tto', 'tts', 'psi']
+        # Add spatial coordinates if available (for spatial mapping)
+        if 'x' in self.data_df.columns and 'y' in self.data_df.columns:
+            self.attr_info += ['x', 'y']
         
     def __len__(self):
         return len(self.data_df)

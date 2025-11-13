@@ -337,6 +337,7 @@ def plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, band_idx, band_name,
 def compute_global_scales_per_band(all_gradients_raw, all_gradients_std):
     """
     Compute global vmin/vmax for each band across all fc values and parameters.
+    NOTE to be updated for NIR bands to update the max values
     
     Args:
         all_gradients_raw: dict {fc: {'LAI': array, 'LAIu': array}}

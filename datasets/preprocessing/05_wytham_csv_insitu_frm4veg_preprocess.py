@@ -15,9 +15,9 @@ SAVE_DIR = os.path.join(BASE_DIR, "csv_preprocessed_data")
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
-ATTRS = ['plot', 'sample_id', 'LAI_down', 'LAI_up', 'LAI', 'FCOVER_up', 'LCC', 'CCC']
+ATTRS = ['plot', 'sample_id', 'LAI_down', 'LAI_up', 'LAI', 'FCOVER_down', 'FCOVER_up', 'FCOVER', 'LCC', 'CCC']
 
-ATTRS_FRM4VEG = ['LAI_down', 'LAI_up', 'LAI.1', 'FCOVER_up', 'LCC..g.m.2.', 'CCC..g.m.2.']
+ATTRS_FRM4VEG = ['LAI_down', 'LAI_up', 'LAI.1', 'FCOVER_down','FCOVER_up', 'FCOVER.1', 'LCC..g.m.2.', 'CCC..g.m.2.']
 
 csv_frm4veg = pd.read_csv(csv_frm4veg_path, delimiter=';')
 plot_labels = [plot_label for plot_label in csv_frm4veg["ESU.Label"].unique() if 'E' in plot_label]

@@ -8,7 +8,7 @@ import os
 import json
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1/models'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547_no_residual/models'
 # TODO add VanillaAE and NNRegressor for analysis
 # CSV_PATH0 = os.path.join(
 #     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
@@ -59,9 +59,9 @@ S2_BANDS = ['B02_BLUE', 'B03_GREEN', 'B04_RED', 'B05_RE1', 'B06_RE2',
             'B07_RE3', 'B08_NIR1', 'B8A_NIR2', 'B09_WV', 'B11_SWI1',
             'B12_SWI2']
 S2_names = {
-    'B02_BLUE': 'B2', 'B03_GREEN': 'B3', 'B04_RED': 'B4', 'B05_RE1': 'B5',
-    'B06_RE2': 'B6', 'B07_RE3': 'B7', 'B08_NIR1': 'B8', 'B8A_NIR2': 'B8a',
-    'B09_WV': 'B9', 'B11_SWI1': 'B11', 'B12_SWI2': 'B12'
+    'B02_BLUE': 'Blue', 'B03_GREEN': 'Green', 'B04_RED': 'Red', 'B05_RE1': 'RE1',
+    'B06_RE2': 'RE2', 'B07_RE3': 'RE3', 'B08_NIR1': 'NIR1', 'B8A_NIR2': 'NIR2',
+    'B09_WV': 'WV', 'B11_SWI1': 'SWI1', 'B12_SWI2': 'SWI2'
 }
 
 rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
@@ -203,14 +203,16 @@ df_coniferous = df2[df2['class'].isin(coniferous)]
 df_deciduous = df2[df2['class'].isin(deciduous)]
 NUM_BINS = 100
 ATTRS = list(rtm_paras.keys())
-# ATTRS = ['N', 'cab', 'LAIu', 'fc']
-# ATTRS = ['N', 'fc']
 # create one figure and plot both variable predictions of different models as a subplot
-fig, axs = plt.subplots(2, 4, figsize=(26, 10))
-# fig, axs = plt.subplots(1, 4, figsize=(25, 5))
-# fig, axs = plt.subplots(1, 2, figsize=(12.5, 5))
+
+# Plot only N, cw, cm, fc
+ATTRS = ['N', 'cw', 'cm', 'fc']
+# fig, axs = plt.subplots(2, 4, figsize=(26, 10))
+fig, axs = plt.subplots(1, 4, figsize=(26, 5))
+
 for i, attr in enumerate(ATTRS):
-    ax=axs[i//4, i % 4]
+    # ax=axs[i//4, i % 4]
+    ax = axs[i]
     # ax = axs[i]
     sns.histplot(
         df_coniferous[f'latent_{attr}'].values,
@@ -238,10 +240,10 @@ for i, attr in enumerate(ATTRS):
     # set the distance between the y label and the y axis
     ax.yaxis.labelpad = 10
     ax.legend(fontsize=fontsize-5)
-axs[-1, -1].axis('off')
+# axs[-1, -1].axis('off')
 plt.tight_layout()
 plt.savefig(os.path.join(
-    SAVE_PATH, 'histogram_realset_vars_corr_coniferous_v_deciduous.png'), dpi=300)
+    SAVE_PATH, 'histogram_realset_vars_coniferous_v_deciduous_N_cw_cm_fc.png'), dpi=300)
 plt.show()
     
 
@@ -578,24 +580,28 @@ plt.show()
 """
 ablation: Scatter plot of input and reconstruction bands
 Plot for VanillaAE, AE_RTM, AE_RTM_corr NOTE neurips full plots
-NOTE: NOW BEING USED
+NOTE: NOW BEING USED UPDATED
 """
 # Scatter plot of the input and reconstructed bands
 df = df2
 # color = 'red'
 color = 'blue'
 for token in ['output', 'init_output']:
-    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+    # fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+    fig, axs = plt.subplots(1, 4, figsize=(24, 6))
     ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
-    for i, band in enumerate(S2_BANDS):
-        ax = axs[i//4, i % 4]
+    # for i, band in enumerate(S2_BANDS):
+        # ax = axs[i//4, i % 4]
+    bands = ['B02_BLUE', 'B04_RED', 'B08_NIR1', 'B11_SWI1']
+    for i, band in enumerate(bands):
+        ax = axs[i]
         sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
                         s=8, alpha=0.5, color=color)
         # adjust the point size and alpha and color
         # calculate RMSE and add it to the title
         # rmse = np.sqrt(np.mean((df[f'target_{band}'] - df[f'output_{band}'])**2))
         r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
-        fontsize = 30
+        fontsize = 35
         # add the RMSE to the title
         ax.set_title(S2_names[band], fontsize=fontsize)
         xlabel = '$X_{\mathrm{S2}}$'
@@ -625,11 +631,11 @@ for token in ['output', 'init_output']:
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
         # set RMSE as a legend
         # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
-        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
+        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=25)
     # make the last subplot empty
-    axs[-1, -1].axis('off')
+    # axs[-1, -1].axis('off')
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}.png'))
+    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}_blue_red_nir1_swi1.png'))
     plt.show()
 
 # %% NOTE neurips changed
@@ -760,7 +766,7 @@ JM = sqrt(2*(1 - exp(-D^2/2)))
 where D is the Bhattacharyya distance
 D = -ln(sum(sqrt(p(x)*q(x))))
 where p(x) and q(x) are the probability density functions of the two distributions
-NOTE: NOW BEING USED
+NOTE: NOW BEING USED UPDATED
 """
 # Assuming df2 is your DataFrame, rtm_paras holds parameters, and SAVE_PATH is defined
 ATTRS = list(rtm_paras.keys())
@@ -771,6 +777,14 @@ for attr in ATTRS:
     df[f'latent_{attr}'] = (df[f'latent_{attr}'] - rtm_paras[attr]['min']) / (rtm_paras[attr]['max'] - rtm_paras[attr]['min'])
 
 species_list = coniferous + deciduous  # Combine your species lists
+
+# Create short labels for species
+species_short_labels = {}
+for i, species in enumerate(coniferous):
+    species_short_labels[species] = f'C-{i+1}'
+for i, species in enumerate(deciduous):
+    species_short_labels[species] = f'D-{i+1}'
+
 means = {}  # Dictionary to store mean vectors
 covariances = {}  # Dictionary to store covariance matrices
 
@@ -802,22 +816,73 @@ for i, species1 in enumerate(species_list):
         jm_distance = jeffreys_matusita_distance(b_distance)
         jm_distances.at[species1, species2] = jm_distance
         jm_distances.at[species2, species1] = jm_distance
+
+# Calculate statistics for within-group and between-group distances
+within_coniferous_distances = []
+within_deciduous_distances = []
+between_groups_distances = []
+
+for i, species1 in enumerate(species_list):
+    for j, species2 in enumerate(species_list):
+        if i < j:  # Only count each pair once
+            if species1 in coniferous and species2 in coniferous:
+                within_coniferous_distances.append(jm_distances.at[species1, species2])
+            elif species1 in deciduous and species2 in deciduous:
+                within_deciduous_distances.append(jm_distances.at[species1, species2])
+            elif (species1 in coniferous and species2 in deciduous) or (species1 in deciduous and species2 in coniferous):
+                between_groups_distances.append(jm_distances.at[species1, species2])
+
+# Save statistics to text file
+stats_file = os.path.join(SAVE_PATH, 'jm_distance_statistics.txt')
+with open(stats_file, 'w') as f:
+    f.write("Jeffreys-Matusita Distance Statistics\n")
+    f.write("="*60 + "\n\n")
+    
+    f.write("Within Coniferous Group:\n")
+    f.write(f"  Mean: {np.mean(within_coniferous_distances):.4f}\n")
+    f.write(f"  Std:  {np.std(within_coniferous_distances):.4f}\n")
+    f.write(f"  N pairs: {len(within_coniferous_distances)}\n\n")
+    
+    f.write("Within Deciduous Group:\n")
+    f.write(f"  Mean: {np.mean(within_deciduous_distances):.4f}\n")
+    f.write(f"  Std:  {np.std(within_deciduous_distances):.4f}\n")
+    f.write(f"  N pairs: {len(within_deciduous_distances)}\n\n")
+    
+    f.write("Between Coniferous and Deciduous Groups:\n")
+    f.write(f"  Mean: {np.mean(between_groups_distances):.4f}\n")
+    f.write(f"  Std:  {np.std(between_groups_distances):.4f}\n")
+    f.write(f"  N pairs: {len(between_groups_distances)}\n\n")
+    
+    f.write("="*60 + "\n")
+    f.write("Species Label Mapping:\n")
+    f.write("-"*60 + "\n")
+    for species in coniferous:
+        f.write(f"{species_short_labels[species]}: {species}\n")
+    for species in deciduous:
+        f.write(f"{species_short_labels[species]}: {species}\n")
+
+print(f"Saved JM distance statistics to: {stats_file}")
+
+# Rename the dataframe indices and columns to use short labels
+jm_distances_short = jm_distances.rename(index=species_short_labels, columns=species_short_labels)
+
 # Now jm_distances contains the pairwise Jeffreys-Matusita distances
-# You can save this to a file, or directly print it
-# print(jm_distances)
 plt.figure(figsize=(12.5, 11))
 # ax = sns.heatmap(jm_distances, annot=True, cmap='viridis', vmin=0, vmax=2, 
 #             annot_kws={"size": 16})
-# plot without the annotation 
-ax = sns.heatmap(jm_distances, cmap='viridis', vmin=0, vmax=2)  
+# plot without the annotation - use short labels
+ax = sns.heatmap(jm_distances_short, cmap='viridis', vmin=0, vmax=2)  
 # highlight the blocks with the same species 
 rect1 = patches.Rectangle((0, 0), 5, 5, linewidth=3, edgecolor='red', facecolor='none')
 rect2 = patches.Rectangle((5, 5), 7, 7, linewidth=3, edgecolor='blue', facecolor='none')
 ax.add_patch(rect1)
 ax.add_patch(rect2)
 # set the size of ticks and colorbar
-fontsize = 19
+fontsize = 30
 plt.tick_params(axis='both', which='major', labelsize=fontsize)
+# Rotate the y tick labels
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=-45)
 # set the label size of the colorbar
 cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=fontsize)

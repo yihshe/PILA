@@ -75,6 +75,7 @@ echo "Using Python: $PYTHON_CMD"
 
 # # Mogi Physics only baseline
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_B.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_B.json --use_kl_term_z_phy false --edge_penalty_weight 0.0 
 
 # # Mogi residual rank experiments
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_Mogi_C.json --use_kl_term_z_phy false --edge_penalty_weight 10.0 --dim_z_aux 1 --residual_rank 1
@@ -99,6 +100,8 @@ echo "Using Python: $PYTHON_CMD"
 # # RTM Physics only baseline
 # # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_austria.json --use_kl_term_z_phy false --edge_penalty_weight 1.0
 
+# $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_austria.json --use_kl_term_z_phy false --edge_penalty_weight 0.0
+
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_wytham.json --use_kl_term_z_phy false --edge_penalty_weight 1.0
 
 # # # RTM prior KL term experiments
@@ -112,29 +115,29 @@ echo "Using Python: $PYTHON_CMD"
 
 #---------------EVALUATION LoRA Inversion Mogi-----------------
 $PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_B_SMPL/1016_192709/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_B_SMPL/1016_192709/models/model_best.pth \
+        --config saved/mogi/PHYS_VAE_MOGI_B_SMPL/1029_143622/models/config.json \
+        --resume saved/mogi/PHYS_VAE_MOGI_B_SMPL/1029_143622/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi \
-        --config saved/mogi/PHYS_VAE_MOGI_C/1016_192308/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C/1016_192308/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi \
+#         --config saved/mogi/PHYS_VAE_MOGI_C/1016_192308/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C/1016_192308/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi_smpl \
+#         --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193002/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193002/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi_smpl \
+#         --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193002/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193002/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193329/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193329/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi_smpl \
+#         --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193329/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193329/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193707/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193707/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi_smpl \
+#         --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193707/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_193707/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_mogi_smpl \
-        --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_194050/models/config.json \
-        --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_194050/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_mogi_smpl \
+#         --config saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_194050/models/config.json \
+#         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_194050/models/model_best.pth \

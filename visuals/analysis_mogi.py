@@ -78,7 +78,7 @@ def kalman_filter(data, alpha=0.002):
 
 # %%
 # BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
-BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_B_SMPL/1016_192709/models'
+BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_B_SMPL/1029_143622/models'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi/0509_103601_smooth'
 # TODO add comparison results for wosmooth case in appendix
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
@@ -155,9 +155,9 @@ for direction in ['uz']:
             # make sure both axes have same ticks to display
             ax.locator_params(axis='x', nbins=4)
             ax.locator_params(axis='y', nbins=4)
-            # make sure all ticks are rounded to 2 decimal places
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            # make sure all ticks are rounded to 1 decimal place
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
             # set RMSE as a legend
             # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
             ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
@@ -173,13 +173,16 @@ df = df0
 # color = 'red'
 color = 'blue'
 # for token in ['output', 'init_output']:
-for token in ['init_output']:
+for token in ['init_output', 'output']:
 # token = 'init_output'
     ylabel = '$X_{\mathrm{GPS, C}}$' if token == 'output' else '$X_{\mathrm{GPS, F}}$'
     for direction in ['ux', 'uy', 'uz']:
-        fig, axs = plt.subplots(3, 4, figsize=(24, 16))
-        for i, station in enumerate(station_info.keys()):
-            ax = axs[i//4, i % 4]
+        # fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+        fig, axs = plt.subplots(1, 4, figsize=(24, 6))
+        # for i, station in enumerate(station_info.keys()):
+        for i, station in enumerate(['AKGG', 'AKMO', 'AV10', 'AV12']):
+            # ax = axs[i//4, i % 4]
+            ax = axs[i]
             gps = f'{direction}_{station}'
             sns.scatterplot(x='target_'+gps, y=f'{token}_'+gps, data=df, ax=ax, s=8,
                             alpha=0.5, color=color)
@@ -193,6 +196,10 @@ for token in ['init_output']:
             ax.set_ylabel(ylabel, fontsize=fontsize)
             # set the same ticks for both x and y axes
             ax.tick_params(axis='both', which='major', labelsize=25)
+            # Ensure tick labels have only one decimal place for both axes
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            
             # plot the diagonal line
             limits = [
                 np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
@@ -207,15 +214,15 @@ for token in ['init_output']:
             # make sure both axes have same ticks to display
             ax.locator_params(axis='x', nbins=4)
             ax.locator_params(axis='y', nbins=4)
-            # make sure all ticks are rounded to 2 decimal places
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            # make sure all ticks are rounded to 1 decimal place
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
             # set RMSE as a legend
             # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
             ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
         plt.tight_layout()
         plt.savefig(
-            os.path.join(SAVE_PATH, f'{direction}_{token}_target_wocorr.png'))
+            os.path.join(SAVE_PATH, f'{direction}_{token}_target_wocorr_AKGG_AKMO_AV10_AV12.png'))
         plt.show()
 
 # %% plot the histogram of the four variables
@@ -242,7 +249,7 @@ for i, attr in enumerate(ATTRS.keys()):
         ax=ax,
         color='blue',
         alpha=0.5,
-        label='w/ $\mathbf{C}$'
+        # label='w/ $\mathbf{C}$'
     )
     ax.tick_params(axis='both', which='major', labelsize=25)
     ax.set_xlim(mogi_paras[attr]['min'], mogi_paras[attr]['max'])
@@ -402,7 +409,7 @@ plt.tight_layout()
 # plt.savefig(os.path.join(
 #     SAVE_PATH, f'{direction}_target_v_mogioutput_gps_date_AV08_12.png'))
 plt.savefig(os.path.join(
-    SAVE_PATH, 'target_v_mogioutput_gps_date.png'))
+    SAVE_PATH, 'target_v_mogioutput_gps_date.png'), dpi=300)
 plt.show()
 
 # %% NOTE comparing the effects of the smoothness term
@@ -511,7 +518,7 @@ plt.tight_layout()
 # plt.savefig(os.path.join(
 #     SAVE_PATH, f'{direction}_mogi_v_bias_v_corr_gps_date_AV08_12.png'))
 plt.savefig(os.path.join(
-    SAVE_PATH, f'{direction}_mogi_v_bias_v_corr_gps_date.png'))
+    SAVE_PATH, f'{direction}_mogi_v_bias_v_corr_gps_date.png'), dpi=300)
 plt.show()
 
 # %%

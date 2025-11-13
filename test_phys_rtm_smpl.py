@@ -53,7 +53,11 @@ def main(config, args: argparse.Namespace):
     # Setup custom logging for test
     logger = setup_test_logging(args.resume)
 
-    if args.insitu:
+    if args.full_region:
+        # Use full region mapping data
+        data_dir_test = '/maps/ys611/MAGIC/data/processed/rtm/wytham/full_region_mapping/full_region_for_mapping.csv'
+        logger.info(f"Using full region mapping data: {data_dir_test}")
+    elif args.insitu:
         data_dir_test = config.config['data_loader']['data_dir_test'].replace('test.csv', 'test_frm4veg.csv')
     else:
         data_dir_test = config.config['data_loader']['data_dir_test']
@@ -177,6 +181,11 @@ def main(config, args: argparse.Namespace):
             data_concat(analyzer, 'sample_id', data_dict['sample_id'])
             data_concat(analyzer, 'class', data_dict['class'])
             data_concat(analyzer, 'date', data_dict['date'])
+            # Save spatial coordinates if available (for full region mapping)
+            if 'x' in data_dict:
+                data_concat(analyzer, 'x', data_dict['x'].cpu().numpy() if torch.is_tensor(data_dict['x']) else data_dict['x'])
+            if 'y' in data_dict:
+                data_concat(analyzer, 'y', data_dict['y'].cpu().numpy() if torch.is_tensor(data_dict['y']) else data_dict['y'])
             # NOTE this MSE loss given by PyTorch is element-wise, but for Phys-VAE, it is sample-wise torch.sum((output-target)**2, dim=1).mean()
             # NOTE the way how the loss is computed in MAGIC also need to be double-checked
             # computing loss, metrics on test set
@@ -232,14 +241,24 @@ def main(config, args: argparse.Namespace):
     df['sample_id'] = analyzer['sample_id']
     df['class'] = analyzer['class']
     df['date'] = analyzer['date']
+    # Add spatial coordinates if available (for full region mapping)
+    if 'x' in analyzer:
+        df['x'] = analyzer['x']
+    if 'y' in analyzer:
+        df['y'] = analyzer['y']
 
-    insitu = '_frm4veg' if args.insitu else ''
+    if args.full_region:
+        suffix = '_full_region'
+    elif args.insitu:
+        suffix = '_frm4veg'
+    else:
+        suffix = ''
 
     df.to_csv(
-        os.path.join(CURRENT_DIR, str(config.resume).split('.pth')[0]+f'_testset_analyzer{insitu}.csv'),
+        os.path.join(CURRENT_DIR, str(config.resume).split('.pth')[0]+f'_testset_analyzer{suffix}.csv'),
               index=False)
     logger.info('Analyzer saved to {}'.format(
-        os.path.join(CURRENT_DIR, str(config.resume).split('.pth')[0]+f'_testset_analyzer{insitu}.csv')
+        os.path.join(CURRENT_DIR, str(config.resume).split('.pth')[0]+f'_testset_analyzer{suffix}.csv')
     ))
 
 
@@ -250,6 +269,8 @@ def data_concat(analyzer: dict, key: str, data):
         analyzer[key] = torch.cat((analyzer[key], data), dim=0)
     elif type(data) == list:
         analyzer[key] = analyzer[key] + data
+    elif type(data) == np.ndarray:
+        analyzer[key] = np.concatenate((analyzer[key], data), axis=0)
 
 
 class TestConfigParser:
@@ -288,6 +309,8 @@ if __name__ == '__main__':
                       help='indices of GPUs to enable (default: all)')
     parser.add_argument('-i', '--insitu', action='store_true', 
                         help='use insitu data (default: False)')
+    parser.add_argument('-f', '--full_region', action='store_true',
+                        help='use full region mapping data (default: False)')
 
     args = parser.parse_args()
     

@@ -9,33 +9,17 @@ import json
 
 # %%
 # BASE_PATH = '/maps/ys611/MAGIC/saved/'
-BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models'
-# CSV_PATH0 = os.path.join(
-#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
-# CSV_PATH1 = os.path.join(
-#     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0329_080231/model_best_testset_analyzer_frm4veg.csv')#NOTE make sure that the value range of LAIu is [0.01, 5]
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_B_WYTHAM/0323_222945/model_best_testset_analyzer_frm4veg.csv')
-# CSV_PATH2 = os.path.join(
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/model_best_testset_analyzer_frm4veg.csv')
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/model_best_testset_analyzer_frm4veg.csv')
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/model_best_testset_analyzer_frm4veg.csv')
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/model_best_testset_analyzer_frm4veg.csv')
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior/0406_114131/model_best_testset_analyzer_frm4veg.csv')
-#     # BASE_PATH, 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/model_best_testset_analyzer_frm4veg.csv')
-#     BASE_PATH, 'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/model_best_testset_analyzer_frm4veg.csv')
-CSV_PATH2 = os.path.join(
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
+# BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
+
+CSV_PATH_INSITU_SITES = os.path.join(
     BASE_PATH, 'model_best_testset_analyzer_frm4veg.csv')
+
+CSV_PATH_WHOLE_REGION = os.path.join(
+    BASE_PATH, 'model_best_testset_analyzer.csv')
 
 CSV_PATH_INSITU = '/maps/ys611/MAGIC/data/raw/wytham/csv_preprocessed_data/frm4veg_insitu.csv'
 
-# SAVE_PATH = os.path.join(BASE_PATH, 
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0329_075709/plots_frm4veg')
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM/0323_204415/plots_frm4veg')
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_1/0406_094832/plots_frm4veg')
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3/0406_105747/plots_frm4veg')
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_3_prior_std0.1/0406_114131/plots_frm4veg')
-#                         # 'rtm/models/PHYS_VAE_RTM_C_WYTHAM_KL_LAIu_fixed1.5_prior_std0.1/0407_102159/plots_frm4veg')
-#                         'rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_103244_kl0_edge1_LAIu3_rank4/models/plots_frm4veg')
 SAVE_PATH = os.path.join(BASE_PATH, 'plots_frm4veg')
 
 
@@ -43,9 +27,17 @@ S2_BANDS = ['B02_BLUE', 'B03_GREEN', 'B04_RED', 'B05_RE1', 'B06_RE2',
             'B07_RE3', 'B08_NIR1', 'B8A_NIR2', 'B09_WV', 'B11_SWI1',
             'B12_SWI2']
 S2_names = {
-    'B02_BLUE': 'B2', 'B03_GREEN': 'B3', 'B04_RED': 'B4', 'B05_RE1': 'B5',
-    'B06_RE2': 'B6', 'B07_RE3': 'B7', 'B08_NIR1': 'B8', 'B8A_NIR2': 'B8a',
-    'B09_WV': 'B9', 'B11_SWI1': 'B11', 'B12_SWI2': 'B12'
+    'B02_BLUE': 'Blue',
+    'B03_GREEN': 'Green',
+    'B04_RED': 'Red',
+    'B05_RE1': 'RE1',
+    'B06_RE2': 'RE2',
+    'B07_RE3': 'RE3',
+    'B08_NIR1': 'NIR1',
+    'B8A_NIR2': 'NIR2',
+    'B09_WV': 'WV',
+    'B11_SWI1': 'SWI1',
+    'B12_SWI2': 'SWI2'
 }
 rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
 # rtm_paras = json.load(open('/maps/ys611/MAGIC/configs/rtm_paras_exp.json'))# Range of LAIu has been changed from [0.01, 1] to [0.01, 5]
@@ -57,11 +49,12 @@ ATTRS_LATEX = {
     'cm': '$Z_{\mathrm{cm}}$', 'LAI': '$Z_{\mathrm{LAI}}$', 'LAIu': '$Z_{\mathrm{LAIu}}$',
     'fc': '$Z_{\mathrm{fc}}$'
     }
+
 ATTRS_INSITU = {
-    'LAIu': 'LAI_down',
-    'LAI': 'LAI_up',
+    'cab': 'LCC',
     'fc': 'FCOVER_up',
-    'cab': 'LCC'
+    'LAI': 'LAI_up',
+    'LAIu': 'LAI_down',
 }
 ATTRS_VANILLA = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
@@ -72,7 +65,8 @@ if not os.path.exists(SAVE_PATH):
 # read the csv file
 # df0 = pd.read_csv(CSV_PATH0)
 # df1 = pd.read_csv(CSV_PATH1)
-df2 = pd.read_csv(CSV_PATH2)
+df_insitu_sites = pd.read_csv(CSV_PATH_INSITU_SITES)
+df_whole_region = pd.read_csv(CSV_PATH_WHOLE_REGION)
 df_insitu = pd.read_csv(CSV_PATH_INSITU)
 
 # retrieve the target and output bands to original scale
@@ -80,11 +74,12 @@ df_insitu = pd.read_csv(CSV_PATH_INSITU)
 # SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/train_x_scale.npy')
 MEAN = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_mean.npy')
 SCALE = np.load('/maps/ys611/MAGIC/data/processed/rtm/wytham/insitu_period/train_x_scale.npy')
-for x in ['target', 'output']:
-    # df1[[f'{x}_{band}' for band in S2_BANDS]] = df1[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
-    df2[[f'{x}_{band}' for band in S2_BANDS]] = df2[[f'{x}_{band}' for band in S2_BANDS]]*SCALE + MEAN
-df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
-df2[[f'bias_{band}' for band in S2_BANDS]] = df2[[f'bias_{band}' for band in S2_BANDS]]*SCALE# df2[[f'init_output_{band}' for band in S2_BANDS]] = df2[[f'init_output_{band}' for band in S2_BANDS]]*SCALE + MEAN
+
+# Scale both datasets
+for df_data in [df_insitu_sites, df_whole_region]:
+    for x in ['target', 'output', 'init_output']:
+        df_data[[f'{x}_{band}' for band in S2_BANDS]] = df_data[[f'{x}_{band}' for band in S2_BANDS]]*SCALE +MEAN
+    df_data[[f'bias_{band}' for band in S2_BANDS]] = df_data[[f'bias_{band}' for band in S2_BANDS]]*SCALE
     
 # dates = ['2018.04.20', '2018.05.05', '2018.05.07', '2018.05.15', '2018.05.17', 
 #          '2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', 
@@ -92,10 +87,46 @@ df2[[f'bias_{band}' for band in S2_BANDS]] = df2[[f'bias_{band}' for band in S2_
 #          '2018.10.09', '2018.10.19', '2018.10.22']
 dates = ['2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11']
 
+# TODO metrics to fairly compare the retrieved biophysical variables with the in-situ measurements
 def r_square(y, y_hat):
     ss_res = np.sum((y - y_hat) ** 2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
     return 1 - (ss_res / ss_tot)
+
+def rrmse(y, y_hat):
+    return np.sqrt(np.mean((y - y_hat) ** 2)) / np.mean(y)
+
+def nmae(y, y_hat, var_name, rtm_paras):
+    """
+    Normalized MAE: Scale both variables to [0,1] using physical ranges, then calculate MAE
+    
+    Args:
+        y: true values
+        y_hat: predicted values
+        var_name: variable name (e.g., 'LAI', 'cab', 'fc', 'LAIu')
+        rtm_paras: dictionary with min/max ranges
+    """
+    y_min = rtm_paras[var_name]['min']
+    y_max = rtm_paras[var_name]['max']
+    
+    # Normalize to [0, 1]
+    y_norm = (y - y_min) / (y_max - y_min)
+    y_hat_norm = (y_hat - y_min) / (y_max - y_min)
+    
+    # Calculate MAE on normalized values
+    return np.mean(np.abs(y_norm - y_hat_norm))
+
+def nrmse(y, y_hat, var_name, rtm_paras):
+    y_min = rtm_paras[var_name]['min']
+    y_max = rtm_paras[var_name]['max']
+    
+    # Normalize to [0, 1]
+    y_norm = (y - y_min) / (y_max - y_min)
+    y_hat_norm = (y_hat - y_min) / (y_max - y_min)
+    
+    # Calculate RMSE on normalized values
+    return np.sqrt(np.mean((y_norm - y_hat_norm) ** 2))
+
 
 def pred2insitu(df_insitu: pd.DataFrame, df_pred: pd.DataFrame, attrs: dict) -> pd.DataFrame:
     """
@@ -129,17 +160,12 @@ def pred2insitu(df_insitu: pd.DataFrame, df_pred: pd.DataFrame, attrs: dict) -> 
         insitu_values = df_insitu[insitu_attr].values
 
         # Apply conversion if needed
-        if pred_attr == 'LAI':
-            # Multiply LAI by fractional cover to get actual area-based LAI
-            if 'latent_fc' not in df_pred.columns:
-                raise ValueError("'latent_fc' is required in df_pred to convert LAI")
-            pred_values = pred_values 
-            # pred_values = pred_values + df_pred['latent_LAIu'].values
-        if insitu_attr == 'LAI':
-            insitu_values = insitu_values / (df_insitu[ATTRS_INSITU['fc']]+1e-6)
-        elif pred_attr == 'cab':
-            # Convert cab from μg/cm² to g/m²
-            pred_values = pred_values / 100
+        if insitu_attr == ATTRS_INSITU['LAI']:
+            # insitu_values = insitu_values / (df_insitu[ATTRS_INSITU['fc']]+1e-6)
+            pass
+        if insitu_attr == ATTRS_INSITU['cab']:
+            # Convert cab from g/m² to μg/cm² 
+            insitu_values = insitu_values * 100
         
         df_merged[f'{insitu_attr}_pred'] = pred_values
         df_merged[f'{insitu_attr}_insitu'] = insitu_values
@@ -154,12 +180,14 @@ Scatter plot for predicted variables and insitu measurements
 # for date in ['2018.06.06', '2018.06.11', '2018.06.26', '2018.06.29', '2018.07.06', '2018.07.11', '2018.07.24']:
 for date in dates:
 # date = '2018.07.11'# '2018.06.29' or '2018.07.06'
-    df_pred = df2[df2['date'] == date]
+    df_pred = df_insitu_sites[df_insitu_sites['date'] == date]
     df_merged = pred2insitu(df_insitu, df_pred, ATTRS_INSITU)
     # Scatter plot for the predicted variables and insitu measurements
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    # fig, axes = plt.subplots(2, 2, figsize=(11, 10))
+    fig, axes = plt.subplots(1, 4, figsize=(24, 6.5))
     for i, (attr, insitu_attr) in enumerate(ATTRS_INSITU.items()):
-        ax = axes[i // 2, i % 2]
+        # ax = axes[i // 2, i % 2]
+        ax = axes[i]
         # Filter out rows where either predicted or insitu values are NaN
         df_merged_filtered = df_merged[['plot', f'{insitu_attr}_pred', f'{insitu_attr}_insitu']].dropna()
         # Check if the filtered DataFrame is empty
@@ -170,35 +198,45 @@ for date in dates:
             x=df_merged_filtered[f'{insitu_attr}_insitu'],
             y=df_merged_filtered[f'{insitu_attr}_pred'],
             ax=ax,
-            s=20,
+            s=40,
             color='blue',
-            alpha=0.5,
+            alpha=0.6,
             # set the point size
             linewidth=0.5,
             marker='o',
         )
-        # Scatter plot, add the plot name as text for each point
-        # for j, plot in enumerate(df_merged_filtered['plot']):
-        #     ax.text(df_merged_filtered[f'{insitu_attr}_insitu'].iloc[j], 
-        #             df_merged_filtered[f'{insitu_attr}_pred'].iloc[j], 
-        #             plot, fontsize=10)
 
-        r2 = r_square(df_merged_filtered[f'{insitu_attr}_insitu'], df_merged_filtered[f'{insitu_attr}_pred'])
-        fontsize = 25
+        # r2_val = r_square(df_merged_filtered[f'{insitu_attr}_insitu'], df_merged_filtered[f'{insitu_attr}_pred'])
+        nmae_val = nmae(df_merged_filtered[f'{insitu_attr}_insitu'], df_merged_filtered[f'{insitu_attr}_pred'], attr, rtm_paras)
+
+        fontsize = 35
 
         # ax.set_title(f'{ATTRS_LATEX[attr]} vs {insitu_attr}')
         xlabel = f'{ATTRS_LATEX[attr]} (in-situ)'
-        ylabel = f'{ATTRS_LATEX[attr]} (predicted)'
+        ylabel = f'{ATTRS_LATEX[attr]} (inferred)'
         ax.set_xlabel(xlabel, fontsize=fontsize)
         ax.set_ylabel(ylabel, fontsize=fontsize)
 
         # set the same ticks for both x and y axes
         ax.tick_params(axis='both', which='major', labelsize=25)
         # plot the diagonal line
-        limits = [
-            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-        ]
+
+        # For fc, set the max limit as 1
+        if attr == 'fc':
+            min_limit = np.min([ax.get_xlim(), ax.get_ylim()])
+            max_limit = 1.05
+
+        elif attr in ['LAI', 'LAIu']:
+            min_limit = 0.01
+            max_limit = np.max([ax.get_xlim(), ax.get_ylim()])
+        elif attr == 'cab':
+            min_limit = 10.0
+            max_limit = np.max([ax.get_xlim(), ax.get_ylim()])
+        else:
+            min_limit = np.min([ax.get_xlim(), ax.get_ylim()])
+            max_limit = np.max([ax.get_xlim(), ax.get_ylim()])
+
+        limits = [min_limit, max_limit]
         ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
         ax.set_xlim(limits)
         ax.set_ylim(limits)
@@ -208,13 +246,43 @@ for date in dates:
         # make sure both axes have same ticks to display
         ax.locator_params(axis='x', nbins=4)
         ax.locator_params(axis='y', nbins=4)
-        # make sure all ticks are rounded to 2 decimal places
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+        
+        # Custom tick formatting based on variable type
+        if attr in ['LAI', 'LAIu']:
+            ticks = [1.0, 2.0, 3.0, 4.0]
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+        elif attr == 'cab':
+            ticks = [20, 30, 40, 50, 60]
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+        # Integer formatting for cab, LAI, LAIu
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.0f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.0f}'.format(x)))
+        elif attr == 'fc':
+            # For fc, tick labels as 0.2, 0.4, 0.8, 1.0
+            ticks = [0.2, 0.4, 0.6, 0.8, 1.0]
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+        else:
+            # Two decimal places for other variables
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
         # set R-squared as a legend
-        # ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
+        # ax.legend([f'$R^2$: {r2_val:.3f}'], fontsize=24)        
+        # Add metrics as text box (upper left corner)
+        metrics_text = f'MAE: {nmae_val:.3f}'
+        ax.text(0.4, 0.125, metrics_text, 
+                transform=ax.transAxes,
+                fontsize=30,
+                verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='white', linewidth=1))
     # set the title for the whole figure
-    fig.suptitle(f'Pred vs In-situ on {date}', fontsize=25)
+    fig.suptitle(f'{date}', fontsize=25)
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_PATH, f'linescatter_corr_insitu_v_pred_{date}.png'))
     plt.show()
@@ -224,117 +292,323 @@ for date in dates:
 Scatter plot of target vs output and target vs init_output bands
 Similar to the analysis in analysis_rtm.py
 """
-df = df2
+datasets = {'insitu_sites': df_insitu_sites, 'whole_region': df_whole_region}
 color = 'blue'
-for token in ['output', 'init_output']:
-    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
-    ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
-    for i, band in enumerate(S2_BANDS):
-        ax = axs[i//4, i % 4]
-        sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
-                        s=8, alpha=0.5, color=color)
-        # calculate R-squared
-        r2 = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
-        fontsize = 30
-        # add the title
-        ax.set_title(S2_names[band], fontsize=fontsize)
-        xlabel = '$X_{\mathrm{S2}}$'
-        ax.set_xlabel(xlabel, fontsize=fontsize)
-        ax.set_ylabel(ylabel, fontsize=fontsize)
-        # set the same ticks for both x and y axes
-        ax.tick_params(axis='both', which='major', labelsize=25)
-        # plot the diagonal line
-        limits = [
-            np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-            np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-        ]
-        ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
-        ax.set_xlim(limits)
-        ax.set_ylim(limits)
-        # set the distance between y label and y axis
-        ax.yaxis.labelpad = 10
-        ax.set_aspect('equal')
-        # make sure both axes have same ticks to display
-        ax.locator_params(axis='x', nbins=4)
-        ax.locator_params(axis='y', nbins=4)
-        # make sure all ticks are rounded to 2 decimal places
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
-        # set R-squared as a legend
-        ax.legend([f'$R^2$: {r2:.3f}'], fontsize=24)
-    # make the last subplot empty
-    axs[-1, -1].axis('off')
-    plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_insitu_bands_target_v_{token}.png'))
-    plt.show()
+
+for dataset_name, df in datasets.items():
+    for token in ['output', 'init_output']:
+        # fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+        fig, axs = plt.subplots(1, 4, figsize=(24, 6))
+        ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
+        # for i, band in enumerate(S2_BANDS):
+        # Only visualize Blue, Red, NIR1 and SWI1 bands
+        bands = ['B02_BLUE', 'B04_RED', 'B08_NIR1', 'B11_SWI1']
+        for i, band in enumerate(bands):
+            # ax = axs[i//4, i % 4]
+            ax = axs[i]
+            sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
+                            s=8, alpha=0.5, color=color)
+            # calculate R-squared
+            r2_val = r_square(df[f'target_{band}'], df[f'{token}_{band}'])
+            fontsize = 35
+            # add the title
+            ax.set_title(S2_names[band], fontsize=fontsize)
+            xlabel = '$X_{\mathrm{S2}}$'
+            ax.set_xlabel(xlabel, fontsize=fontsize)
+            ax.set_ylabel(ylabel, fontsize=fontsize)
+            # set the same ticks for both x and y axes
+            ax.tick_params(axis='both', which='major', labelsize=25)
+            # plot the diagonal line
+            limits = [
+                np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+                np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+            ]
+            ax.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
+            ax.set_xlim(limits)
+            ax.set_ylim(limits)
+            # set the distance between y label and y axis
+            ax.yaxis.labelpad = 10
+            ax.set_aspect('equal')
+            # make sure both axes have same ticks to display
+            ax.locator_params(axis='x', nbins=4)
+            ax.locator_params(axis='y', nbins=4)
+            # make sure all ticks are rounded to 2 decimal places
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.2f}'.format(x)))
+            # set R-squared as a legend
+            ax.legend([f'$R^2$: {r2_val:.3f}'], fontsize=25)
+        # make the last subplot empty
+        # axs[-1, -1].axis('off')
+        plt.tight_layout()
+        plt.savefig(os.path.join(SAVE_PATH, f'linescatter_{dataset_name}_bands_target_v_{token}_blue_red_nir1_swi1.png'))
+        plt.show()
 
 # %%
 """
 Time series of latent biophysical variables with mean and std as error bars
-Also overlay in-situ measurements on the plots
+For insitu sites: also overlay in-situ measurements on the plots
+Similar to the analysis in analysis_rtm.py
 """
-# Only plot variables that have in-situ measurements
-ATTRS2 = list(ATTRS_INSITU.keys())
-fig, axs = plt.subplots(2, 2, figsize=(20, 16)) 
-df = df2
+# Map dates to formatted labels like "08 Apr", "21 Aug", etc.
+months = {'04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct'}
+dates_plot = [f"{date.split('.')[2]} {months[date.split('.')[1]]}" for date in dates]
 
-# Calculate average date for in-situ measurements
-# Assuming in-situ measurements are from around these dates
-insitu_dates = dates  # The 4 dates when measurements were taken
-# Calculate the average in-situ value across all available dates
-insitu_avg = {}
-for attr in ATTRS2:
-    insitu_attr = ATTRS_INSITU[attr]
-    if insitu_attr in df_insitu.columns:
-        insitu_avg[attr] = df_insitu[insitu_attr].mean()
+# Define datasets and their configurations
+datasets_config = {
+    'insitu_sites': {
+        'df': df_insitu_sites,
+        'show_insitu': True,
+        'filename': 'timeseries_insitu_sites_vars_with_measurements.png'
+    },
+    'whole_region': {
+        'df': df_whole_region,
+        'show_insitu': True,
+        'filename': 'timeseries_whole_region_vars.png'
+    }
+}
 
-for i, attr in enumerate(ATTRS2):
-    ax = axs[i//2, i % 2]
-    # get the time series of mean and std
-    mean = []
-    std = []
-    for date in dates:
-        df_filtered = df[df['date']==date]
-        mean.append(df_filtered[f'latent_{attr}'].mean())
-        std.append(df_filtered[f'latent_{attr}'].std())
+# Find the index for July 3rd (between June 29 and July 6)
+# Dynamically find indices of June 29 and July 6 in the dates list
+june_29_date = '2018.06.29'
+july_6_date = '2018.07.06'
+
+try:
+    june_29_idx = dates.index(june_29_date)
+    july_6_idx = dates.index(july_6_date)
+    # July 3rd is halfway between June 29 and July 6
+    insitu_date = (june_29_idx + july_6_idx) / 2.0
+except ValueError:
+    # If dates are not in the list, set to None and skip in-situ plotting
+    insitu_date = None
+    print(f"Warning: In-situ measurement dates ({june_29_date} and {july_6_date}) not found in dates list.")
+
+# Initialize dictionary to store statistics
+stats_dict = {}
+
+for dataset_name, config in datasets_config.items():
+    # Always plot all 7 variables
+    # fig, axs = plt.subplots(4, 2, figsize=(20, 20))
+    # fig, axs = plt.subplots(4, 2, figsize=(20, 16))
+    # fig, axs = plt.subplots(1, 4, figsize=(24, 4))
+    fig, axs = plt.subplots(2, 2, figsize=(20, 7.5))
+    df = config['df']
     
-    # plot the time series of the mean and show the std as error bars
-    # map each date to the format like Aug 21, Apr 08, etc.
-    dates_plot = []
-    months = {'04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct'}
-    dates_plot = [f"{date.split('.')[2]} {months[date.split('.')[1]]}" for date in dates]
+    # Initialize statistics for this dataset
+    if dataset_name not in stats_dict:
+        stats_dict[dataset_name] = {}
     
-    ax.errorbar(x=dates_plot, y=mean, yerr=std, fmt='o-', color='blue', label='Predicted', markersize=8, linewidth=2)
-    
-    # Add in-situ measurements if available
-    insitu_attr = ATTRS_INSITU[attr]
-    if insitu_attr in df_insitu.columns:
-        # For each date, get the average in-situ measurement
-        insitu_means = []
-        for date in dates:
-            # Get in-situ measurements for this date
-            df_merged_date = pred2insitu(df_insitu, df[df['date']==date], {attr: insitu_attr})
-            if f'{insitu_attr}_insitu' in df_merged_date.columns:
-                insitu_mean = df_merged_date[f'{insitu_attr}_insitu'].mean()
-                insitu_means.append(insitu_mean)
-            else:
-                insitu_means.append(np.nan)
+    # for i, attr in enumerate(ATTRS):
+    for i, attr in enumerate(['cab', 'fc', 'LAI', 'LAIu']):
+        ax = axs[i//2, i % 2]
+        # ax = axs[i]
         
-        # Plot in-situ measurements
-        ax.scatter(x=dates_plot, y=insitu_means, marker='s', s=150, color='red', 
-                   label='In-situ', zorder=5, edgecolors='black', linewidth=1.5)
+        # Get the time series of mean and std for predicted values
+        mean_pred = []
+        std_pred = []
+        
+        # Initialize statistics for this variable
+        if attr not in stats_dict[dataset_name]:
+            stats_dict[dataset_name][attr] = {
+                'predictions': {},
+                'insitu': None,
+                'n_insitu': 0
+            }
+        
+        # Use latent values directly (no conversion needed)
+        for date in dates:
+            df_filtered = df[df['date']==date]
+            pred_values = df_filtered[f'latent_{attr}'].dropna()
+            
+            # Compute statistics for predictions
+            mean_val = pred_values.mean()
+            std_val = pred_values.std()
+            mean_pred.append(mean_val)
+            std_pred.append(std_val)
+            
+            # Store statistics for this date
+            stats_dict[dataset_name][attr]['predictions'][date] = {
+                'min': pred_values.min(),
+                'max': pred_values.max(),
+                'mean': mean_val,
+                'median': pred_values.median(),
+                'std': std_val,
+                'n': len(pred_values)
+            }
+        
+        # Plot the time series with numerical x-positions for better control
+        x_positions = list(range(len(dates_plot)))
+        ax.errorbar(x=x_positions, y=mean_pred, yerr=std_pred, fmt='o', color='blue', 
+                    label='Predicted' if (config['show_insitu'] and attr in ATTRS_INSITU) else None,
+                    markersize=8, linewidth=2)
+        
+        # Add in-situ measurements if applicable (only for insitu_sites dataset and where measurements exist)
+        if config['show_insitu'] and attr in ATTRS_INSITU and insitu_date is not None:
+            insitu_attr = ATTRS_INSITU[attr]
+            if insitu_attr in df_insitu.columns:
+                # Get in-situ values directly from df_insitu
+                insitu_values = df_insitu[insitu_attr].dropna()
+                
+                # Apply conversion for cab: g/m² to μg/cm²
+                if attr == 'cab':
+                    insitu_values = insitu_values * 100
+                
+                if len(insitu_values) > 0:
+                    mean_insitu = insitu_values.mean()
+                    std_insitu = insitu_values.std()
+                    
+                    # Plot at July 3rd position (between June 29 and July 6)
+                    ax.errorbar(x=[insitu_date], y=[mean_insitu], yerr=[std_insitu], 
+                               fmt='s', color='red', markersize=12, label='In-situ', 
+                               zorder=5, markeredgecolor='black', linewidth=1.5)
+                    
+                    # Store in-situ statistics
+                    stats_dict[dataset_name][attr]['insitu'] = {
+                        'min': insitu_values.min(),
+                        'max': insitu_values.max(),
+                        'mean': mean_insitu,
+                        'median': insitu_values.median(),
+                        'std': std_insitu
+                    }
+                    stats_dict[dataset_name][attr]['n_insitu'] = len(insitu_values)
+        
+        fontsize = 40
+        ax.set_ylabel(ATTRS_LATEX[attr], fontsize=fontsize)
+        
+        # Always set y-axis limits to physical range
+        # ax.set_ylim(rtm_paras[attr]['min'], rtm_paras[attr]['max'])
+        # custom y-axis limits
+        if attr == 'cab':
+            ax.set_ylim(10, 80)
+        elif attr == 'fc':
+            ax.set_ylim(0.1, 1.1)
+        elif attr == 'LAI':
+            ax.set_ylim(0.01, 5.0)
+        elif attr == 'LAIu':
+            ax.set_ylim(0.01, 3.1)
+        
+        # Set appropriate y-axis ticks for each variable
+        if attr == 'N':
+            ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0])
+        elif attr == 'cab':
+            ax.set_yticks([20, 40, 60, 80])
+        elif attr == 'cw':
+            ax.set_yticks([0.005, 0.010, 0.015, 0.020])
+        elif attr == 'cm':
+            ax.set_yticks([0.01, 0.02, 0.03, 0.04, 0.05])
+        elif attr == 'LAI':
+            ax.set_yticks([1.0, 2.0, 3.0, 4.0, 5.0])
+        elif attr == 'LAIu':
+            ax.set_yticks([1.0, 2.0, 3.0])
+        elif attr == 'fc':
+            ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+            # ax.set_yticks([0.4, 0.6, 0.8, 1.0])
+        
+        # if config['show_insitu'] and attr in ATTRS_INSITU:
+        #     ax.legend(fontsize=25, loc='best')
+        ax.tick_params(axis='both', which='major', labelsize=30)
+        
+        # Set x-tick positions and labels
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels(dates_plot, rotation=-30)
     
-    fontsize = 32
-    ax.set_ylabel(ATTRS_LATEX[attr], fontsize=fontsize)
-    # set the range of y axis as the physical range of the variable
-    ax.set_ylim(rtm_paras[attr]['min'], rtm_paras[attr]['max'])
-    ax.legend(fontsize=23, loc='best')
-    ax.tick_params(axis='both', which='major', labelsize=23)
-    # rotate the ticks
-    ax.set_xticklabels(dates_plot, rotation=-45)  
+    # Turn off the last subplot
+    # axs[-1, -1].axis('off')
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(SAVE_PATH, config['filename']), dpi=300)
+    plt.show()
 
+# Compute normalized MAE and RMSE for all dates (compare with in-situ measurements made on July 3-5)
+for dataset_name in stats_dict:
+    df_dataset = datasets_config[dataset_name]['df']
+    for attr in stats_dict[dataset_name]:
+        if stats_dict[dataset_name][attr]['insitu'] and attr in ATTRS_INSITU:
+            insitu_attr = ATTRS_INSITU[attr]
+            if insitu_attr in df_insitu.columns:
+                for date in dates:
+                    df_filtered = df_dataset[df_dataset['date']==date]
+                    if 'sample_id' in df_filtered.columns:
+                        df_merged = pd.merge(
+                            df_filtered[['sample_id', f'latent_{attr}']],
+                            df_insitu[['sample_id', insitu_attr]],
+                            on='sample_id', how='inner'
+                        )
+                        if len(df_merged) > 0:
+                            # Drop rows where either value is NaN to keep them aligned
+                            df_merged_clean = df_merged[[f'latent_{attr}', insitu_attr]].dropna()
+                            if len(df_merged_clean) > 0:
+                                pred_clean = df_merged_clean[f'latent_{attr}'].values
+                                insitu_clean = df_merged_clean[insitu_attr].values
+                                # Apply conversion for cab
+                                if attr == 'cab':
+                                    insitu_clean = insitu_clean * 100
+                                # Compute normalized metrics
+                                stats_dict[dataset_name][attr]['predictions'][date]['nmae'] = nmae(insitu_clean, pred_clean, attr, rtm_paras)
+                                stats_dict[dataset_name][attr]['predictions'][date]['nrmse'] = nrmse(insitu_clean, pred_clean, attr, rtm_paras)
+
+# Save statistics to CSV
+rows = []
+for dataset_name in stats_dict:
+    for attr in stats_dict[dataset_name]:
+        # In-situ statistics
+        if stats_dict[dataset_name][attr]['insitu']:
+            ins = stats_dict[dataset_name][attr]['insitu']
+            rows.append({
+                'dataset': dataset_name, 'variable': attr, 'date': 'in_situ_measurement', 'type': 'in_situ',
+                'n': stats_dict[dataset_name][attr]['n_insitu'], 'min': ins['min'], 'max': ins['max'],
+                'mean': ins['mean'], 'median': ins['median'], 'std': ins['std'], 'nmae': np.nan, 'nrmse': np.nan
+            })
+        # Prediction statistics
+        for date, stats in stats_dict[dataset_name][attr]['predictions'].items():
+            rows.append({
+                'dataset': dataset_name, 'variable': attr, 'date': date, 'type': 'prediction',
+                'n': stats['n'], 'min': stats['min'], 'max': stats['max'], 'mean': stats['mean'],
+                'median': stats['median'], 'std': stats['std'], 'nmae': stats.get('nmae', np.nan),
+                'nrmse': stats.get('nrmse', np.nan)
+            })
+
+if rows:
+    pd.DataFrame(rows).to_csv(os.path.join(SAVE_PATH, 'timeseries_statistics.csv'), index=False)
+
+print(f"Statistics saved to {os.path.join(SAVE_PATH, 'timeseries_statistics.csv')}")
+# %%
+"""
+Histogram of predicted variables for whole region test set
+"""
+NUM_BINS = 100
+ATTRS = list(rtm_paras.keys())
+
+# Create one figure with 2x4 subplots for all 7 variables
+fig, axs = plt.subplots(2, 4, figsize=(26, 10))
+
+for i, attr in enumerate(ATTRS):
+    ax = axs[i//4, i % 4]
+    
+    # Plot histogram for predicted values
+    sns.histplot(
+        df_whole_region[f'latent_{attr}'].values,
+        bins=NUM_BINS,
+        ax=ax,
+        color='blue',
+        label='Predicted',
+        alpha=0.5,
+    )
+    
+    # Change the fontsize of the x and y ticks
+    ax.tick_params(axis='both', which='major', labelsize=25)
+    # Set the range of x axis as the physical range of the variable
+    ax.set_xlim(rtm_paras[attr]['min'], rtm_paras[attr]['max'])
+    fontsize = 30
+    ax.set_xlabel(ATTRS_LATEX[attr], fontsize=fontsize)
+    ax.set_ylabel('Frequency', fontsize=fontsize)
+    # Set the distance between the y label and the y axis
+    ax.yaxis.labelpad = 10
+    ax.legend(fontsize=fontsize-5)
+
+# Remove the last subplot
+axs[-1, -1].axis('off')
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'timeseries_insitu_vars_with_measurements.png'))
+# plt.savefig(os.path.join(SAVE_PATH, 'histogram_whole_region_vars.png'), dpi=300)
 plt.show()
 
 

@@ -146,7 +146,7 @@ echo "Using Python: $PYTHON_CMD"
 # # RTM PhysVAE baseline
 # $PYTHON_CMD -m train_phys --config configs/phys/AE_RTM_C_austria.json
 
-# # $PYTHON_CMD -m train_phys --config configs/phys/AE_RTM_C_wytham.json
+# $PYTHON_CMD -m train_phys --config configs/phys/AE_RTM_C_wytham.json
 
 # # RTM Physics only baseline
 # $PYTHON_CMD -m train_phys_smpl --config configs/phys_smpl/AE_RTM_B_austria.json --use_kl_term_z_phy false --edge_penalty_weight 1.0
@@ -192,57 +192,68 @@ echo "Using Python: $PYTHON_CMD"
 #         --resume saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_194050/models/model_best.pth \
 
 #---------------EVALUATION LoRA Inversion RTM-----------------
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547/models/model_best.pth \
 
 $PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/model_best.pth \
+        --config saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1027_194202/models/config.json \
+        --resume saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1027_194202/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/model_best.pth \
-        --insitu
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_B_WYTHAM_SMPL/1017_131732/models/model_best.pth \
+#         --insitu
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_010247/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_010247/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_023422/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_023422/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_010247/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_010247/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_042352/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_042352/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_023422/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_023422/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_063322/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_063322/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_042352/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_042352/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm \
-        --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_063322/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1017_063322/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm \
-        --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/model_best.pth \
-        --insitu
+# $PYTHON_CMD -m test_phys_rtm \
+#         --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1023_224414/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1023_224414/models/model_best.pth \
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models/model_best.pth \
+# $PYTHON_CMD -m test_phys_rtm \
+#         --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1023_224414/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1023_224414/models/model_best.pth \
+#         --insitu
 
-$PYTHON_CMD -m test_phys_rtm_smpl \
-        --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models/config.json \
-        --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models/model_best.pth \
-        --insitu
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1023_234650/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1023_234650/models/model_best.pth \
+
+# $PYTHON_CMD -m test_phys_rtm_smpl \
+#         --config saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1023_234650/models/config.json \
+#         --resume saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1023_234650/models/model_best.pth \
+#         --insitu
+
+#/maps/ys611/MAGIC/saved_archived/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/0923_023534_kl0_edge1_rank4/models
+
+# $PYTHON_CMD -m test_phys_rtm \
+#         --config /maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/config.json \
+#         --resume /maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models/model_best.pth \
+#         --full_region
