@@ -9,7 +9,8 @@ import json
 
 # %%
 # BASE_PATH = '/maps/ys611/MAGIC/saved/'
-BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
+# BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models'
 # BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
 
 CSV_PATH_INSITU_SITES = os.path.join(
@@ -515,7 +516,7 @@ for dataset_name, config in datasets_config.items():
     # axs[-1, -1].axis('off')
     
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, config['filename']), dpi=300)
+    # plt.savefig(os.path.join(SAVE_PATH, config['filename']), dpi=300)
     plt.show()
 
 # Compute normalized MAE and RMSE for all dates (compare with in-situ measurements made on July 3-5)
@@ -567,10 +568,142 @@ for dataset_name in stats_dict:
                 'nrmse': stats.get('nrmse', np.nan)
             })
 
-if rows:
-    pd.DataFrame(rows).to_csv(os.path.join(SAVE_PATH, 'timeseries_statistics.csv'), index=False)
+# if rows:
+#     pd.DataFrame(rows).to_csv(os.path.join(SAVE_PATH, 'timeseries_statistics.csv'), index=False)
 
 print(f"Statistics saved to {os.path.join(SAVE_PATH, 'timeseries_statistics.csv')}")
+# %%
+"""
+Kernel Density Estimation (KDE) plots for normalized residuals (y_hat_norm - y_norm)
+for each variable and each date, comparing both models
+"""
+# Define both model paths
+BASE_PATH_SMPL = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM_SMPL/1016_194432/models'
+BASE_PATH_PVAE = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_WYTHAM/1017_033515/models'
+
+# Load data from both models
+CSV_PATH_INSITU_SITES_SMPL = os.path.join(BASE_PATH_SMPL, 'model_best_testset_analyzer_frm4veg.csv')
+CSV_PATH_INSITU_SITES_PVAE = os.path.join(BASE_PATH_PVAE, 'model_best_testset_analyzer_frm4veg.csv')
+
+df_insitu_sites_smpl = pd.read_csv(CSV_PATH_INSITU_SITES_SMPL)
+df_insitu_sites_pvae = pd.read_csv(CSV_PATH_INSITU_SITES_PVAE)
+
+# Scale both datasets (same scaling as before)
+for df_data in [df_insitu_sites_smpl, df_insitu_sites_pvae]:
+    for x in ['target', 'output', 'init_output']:
+        df_data[[f'{x}_{band}' for band in S2_BANDS]] = df_data[[f'{x}_{band}' for band in S2_BANDS]]*SCALE +MEAN
+    df_data[[f'bias_{band}' for band in S2_BANDS]] = df_data[[f'bias_{band}' for band in S2_BANDS]]*SCALE
+
+# Helper function to calculate residuals for a given dataset
+def calculate_residuals(df_dataset, attr, date, insitu_attr, df_insitu, rtm_paras):
+    """Calculate normalized residuals for a given model dataset"""
+    df_filtered = df_dataset[df_dataset['date'] == date]
+    if 'sample_id' not in df_filtered.columns or len(df_filtered) == 0:
+        return None
+    
+    # Merge predictions with in-situ measurements
+    df_merged = pd.merge(
+        df_filtered[['sample_id', f'latent_{attr}']],
+        df_insitu[['sample_id', insitu_attr]],
+        on='sample_id', how='inner'
+    )
+    
+    if len(df_merged) == 0:
+        return None
+    
+    # Drop rows where either value is NaN
+    df_merged_clean = df_merged[[f'latent_{attr}', insitu_attr]].dropna()
+    
+    if len(df_merged_clean) == 0:
+        return None
+    
+    pred_clean = df_merged_clean[f'latent_{attr}'].values
+    insitu_clean = df_merged_clean[insitu_attr].values
+    
+    # Apply conversion for cab
+    if attr == 'cab':
+        insitu_clean = insitu_clean * 100
+    
+    # Get normalization parameters
+    y_min = rtm_paras[attr]['min']
+    y_max = rtm_paras[attr]['max']
+    
+    # Normalize to [0, 1]
+    y_norm = (insitu_clean - y_min) / (y_max - y_min)
+    y_hat_norm = (pred_clean - y_min) / (y_max - y_min)
+    
+    # Calculate residuals: y_hat_norm - y_norm (prediction - measurement)
+    residuals = y_hat_norm - y_norm
+    
+    return residuals
+
+# Create a separate figure for each variable
+for attr in ['cab', 'fc', 'LAI', 'LAIu']:
+    insitu_attr = ATTRS_INSITU[attr]
+    if insitu_attr not in df_insitu.columns:
+        continue
+    
+    # Create figure with 1 row, 4 columns (one for each date)
+    fig, axs = plt.subplots(1, 4, figsize=(24, 5))
+    
+    # Loop through each date
+    for j, date in enumerate(dates):
+        ax = axs[j]
+        
+        # Calculate residuals for both models
+        residuals_smpl = calculate_residuals(df_insitu_sites_smpl, attr, date, insitu_attr, df_insitu, rtm_paras)
+        residuals_pvae = calculate_residuals(df_insitu_sites_pvae, attr, date, insitu_attr, df_insitu, rtm_paras)
+        
+        if residuals_smpl is None and residuals_pvae is None:
+            ax.axis('off')
+            continue
+        
+        # Determine x-axis range from both models
+        all_residuals = []
+        if residuals_smpl is not None:
+            all_residuals.extend(residuals_smpl)
+        if residuals_pvae is not None:
+            all_residuals.extend(residuals_pvae)
+        
+        if len(all_residuals) == 0:
+            ax.axis('off')
+            continue
+        
+        x_range = np.max(np.abs(all_residuals)) * 1.2
+        
+        # Plot KDE for SMPL model (blue, "ours")
+        if residuals_smpl is not None and len(residuals_smpl) > 1:
+            sns.kdeplot(data=residuals_smpl, ax=ax, fill=True, alpha=0.5, color='blue', 
+                       linewidth=2, label='ours')
+        
+        # Plot KDE for PVAE model (red, "PVAE")
+        if residuals_pvae is not None and len(residuals_pvae) > 1:
+            sns.kdeplot(data=residuals_pvae, ax=ax, fill=True, alpha=0.5, color='red', 
+                       linewidth=2, label='PVAE')
+        
+        # Add vertical line at 0
+        ax.axvline(x=0, color='black', linestyle='--', linewidth=1.5, alpha=0.7, zorder=0)
+        
+        # Set x-axis limits to center around 0
+        ax.set_xlim(-x_range, x_range)
+        
+        # Formatting
+        fontsize = 18
+        if j == 0:  # Leftmost column
+            ax.set_ylabel('Density', fontsize=fontsize)
+        ax.set_xlabel('Normalized Residual', fontsize=fontsize)
+        ax.set_title(date, fontsize=fontsize)
+        ax.tick_params(axis='both', which='major', labelsize=14)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=12, loc='upper right')
+    
+    # Add overall title for the variable
+    fig.suptitle(f'KDE of Normalized Residuals: {ATTRS_LATEX[attr]}', fontsize=22, y=1.02)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(SAVE_PATH, f'kde_residuals_normalized_{attr}.png'), dpi=300, bbox_inches='tight')
+    plt.show()
+
 # %%
 """
 Histogram of predicted variables for whole region test set
