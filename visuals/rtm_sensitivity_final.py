@@ -16,6 +16,7 @@ import torch
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import seaborn as sns
 
 # Add MAGIC to path
@@ -160,20 +161,23 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     """
     label = BAND_LABELS[band_name]
     
-    # Determine axis labels and data orientation
+    # Always use same axis orientation as reflectance plots: x=LAIu, y=LAI
+    # For LAI gradients: data is already correct (axis 0 = LAI, axis 1 = LAIu)
+    # For LAIu gradients: data is (n_lai, n_laiu), which matches reflectance orientation
+    # So we don't need to transpose for LAIu - keep same orientation as reflectance
     if param_name == 'LAI':
         # ∂X/∂LAI: x-axis is LAIu (fixed), y-axis is LAI (gradient variable)
-        xlabel = r'$Z_{\mathrm{LAIu}}$ (fixed)'
+        xlabel = r'$Z_{\mathrm{LAIu}}$'
         ylabel = r'$Z_{\mathrm{LAI}}$'
         x_range = laiu_vals
         y_range = lai_vals
     else:  # LAIu
-        # ∂X/∂LAIu: x-axis is LAI (fixed), y-axis is LAIu (gradient variable)
-        grad_data = grad_data.T
-        xlabel = r'$Z_{\mathrm{LAI}}$ (fixed)'
-        ylabel = r'$Z_{\mathrm{LAIu}}$'
-        x_range = lai_vals
-        y_range = laiu_vals
+        # ∂X/∂LAIu: keep same orientation as reflectance (x=LAIu, y=LAI)
+        # Data is already in correct orientation (n_lai, n_laiu)
+        xlabel = r'$Z_{\mathrm{LAIu}}$'
+        ylabel = r'$Z_{\mathrm{LAI}}$'
+        x_range = laiu_vals
+        y_range = lai_vals
     
     # Compute statistics
     threshold = STD_GRAD_THRESHOLD if is_standardized else None
@@ -197,32 +201,22 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     )
     
     # Set custom tick positions and labels
-    # Determine tick values based on parameter type
-    # For LAI: use integers 1, 2, 3, 4, 5
-    # For LAIu: use half-integers 0.5, 1.0, 1.5, 2.0, 2.5, 3.0
+    # Always use same ticks as reflectance plots: x=LAIu (0.5 intervals), y=LAI (1.0 intervals)
     
-    # X-axis ticks
+    # X-axis ticks (always LAIu)
     x_min, x_max = x_range[0], x_range[-1]
-    if param_name == 'LAI':
-        # X is LAIu (fixed) -> use 0.5 intervals up to 3.0
-        x_nice_vals = np.arange(0.5, 3.0 + 0.01, 0.5)
-    else:
-        # X is LAI (fixed) -> use 1.0 intervals up to 5.0
-        x_nice_vals = np.arange(1.0, 5.0 + 0.01, 1.0)
+    # X is always LAIu -> use 0.5 intervals up to 3.0
+    x_nice_vals = np.arange(0.5, 3.0 + 0.01, 0.5)
     
     # Add edge positions (0.01 at start isn't shown, but max value position is at edge)
     x_tick_positions = [(val - x_min) / (x_max - x_min) * (len(x_range) - 1) for val in x_nice_vals]
     ax.set_xticks(x_tick_positions)
-    ax.set_xticklabels([f'{val:.1f}' for val in x_nice_vals], fontsize=18)   # <-- set fontsize
+    ax.set_xticklabels([f'{val:.1f}' for val in x_nice_vals], fontsize=18)
     
-    # Y-axis ticks (gradient variable)
+    # Y-axis ticks (always LAI)
     y_min, y_max = y_range[0], y_range[-1]
-    if param_name == 'LAI':
-        # Y is LAI (gradient) -> use 1.0 intervals up to 5.0
-        y_nice_vals = np.arange(1.0, 5.0 + 0.01, 1.0)
-    else:
-        # Y is LAIu (gradient) -> use 0.5 intervals up to 3.0
-        y_nice_vals = np.arange(0.5, 3.0 + 0.01, 0.5)
+    # Y is always LAI -> use 1.0 intervals up to 5.0
+    y_nice_vals = np.arange(1.0, 5.0 + 0.01, 1.0)
     
     y_tick_positions = [(val - y_min) / (y_max - y_min) * (len(y_range) - 1) for val in y_nice_vals]
     ax.set_yticks(y_tick_positions)
@@ -231,8 +225,12 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     # Invert y-axis so 0.01 is at bottom
     ax.invert_yaxis()
     
-    ax.set_xlabel(xlabel, fontsize=18)
-    ax.set_ylabel(ylabel, fontsize=18)
+    ax.set_xlabel(xlabel, fontsize=20)
+    ax.set_ylabel(ylabel, fontsize=20)
+
+    # add padding to the x and y labels
+    ax.xaxis.labelpad = 5
+    ax.yaxis.labelpad = 5
     
     # Build title NOTE edit
     z_var = f'Z_{{\mathrm{{{param_name}}}}}'
@@ -242,7 +240,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
         title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
         # Add mean value to upper right corner
         ax.text(
-            0.95, 0.9, 
+            0.95, 0.05, 
             f'Mean={mean_grad:.3f}', 
             va='bottom', ha='right', 
             transform=ax.transAxes, 
@@ -252,7 +250,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
         title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
         # Add mean value to upper right corner
         ax.text(
-            0.95, 0.9, 
+            0.95, 0.05, 
             f'Mean={mean_grad:.6f}', 
             va='bottom', ha='right', 
             transform=ax.transAxes, 
@@ -262,14 +260,17 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     # ax.set_title(title, fontsize=11, fontweight='bold', pad=8)
     ax.set_title(title, fontsize=18, fontweight='bold', pad=8)
     
-    # Get colorbar and set label font size
+    # ===== COLORBAR CONFIGURATION FOR GRADIENT PLOTS =====
+    # Get the colorbar object from the heatmap
     cbar = ax.collections[0].colorbar
-    # You may uncomment and modify label if desired:
+    
+    # Set colorbar label based on gradient type (standardized or raw)
     # if is_standardized:
-    #     cbar_label = fr'$\partial {x_var} / \partial {z_var}$ (std)'
+    #     cbar_label = fr'$Gradient (standardized)$'
     # else:
-    #     cbar_label = fr'$\partial {x_var} / \partial {z_var}$'
-    # cbar.set_label(cbar_label, fontsize=10)
+    #     cbar_label = fr'$Gradient (raw)$'
+    # cbar.set_label(cbar_label, fontsize=18)
+    
     # Set font size of colorbar tick labels
     cbar.ax.tick_params(labelsize=18)
     
@@ -284,7 +285,7 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
 
 
 def plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, band_idx, band_name, 
-                             fc_value, output_dir):
+                             fc_value, output_dir, vmin_global=None, vmax_global=None):
     """Plot reflectance heatmap."""
     data = spectra[:, :, band_idx]
     
@@ -294,7 +295,9 @@ def plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, band_idx, band_name,
         cmap='viridis',
         square=True,  # Square heatmap!
         xticklabels=False,
-        yticklabels=False
+        yticklabels=False,
+        vmin=vmin_global,
+        vmax=vmax_global
     )
     
     # Set custom tick positions and labels for LAIu (x-axis)
@@ -303,7 +306,7 @@ def plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, band_idx, band_name,
     laiu_nice_vals = np.arange(0.5, 3.0 + 0.01, 0.5)
     laiu_tick_positions = [(val - laiu_min) / (laiu_max - laiu_min) * (len(laiu_vals) - 1) for val in laiu_nice_vals]
     ax.set_xticks(laiu_tick_positions)
-    ax.set_xticklabels([f'{val:.1f}' for val in laiu_nice_vals])
+    ax.set_xticklabels([f'{val:.1f}' for val in laiu_nice_vals], fontsize=18)
     
     # Set custom tick positions and labels for LAI (y-axis)
     # LAI: 1.0, 2.0, 3.0, 4.0, 5.0
@@ -311,21 +314,42 @@ def plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, band_idx, band_name,
     lai_nice_vals = np.arange(1.0, 5.0 + 0.01, 1.0)
     lai_tick_positions = [(val - lai_min) / (lai_max - lai_min) * (len(lai_vals) - 1) for val in lai_nice_vals]
     ax.set_yticks(lai_tick_positions)
-    ax.set_yticklabels([f'{val:.1f}' for val in lai_nice_vals])
+    ax.set_yticklabels([f'{val:.1f}' for val in lai_nice_vals], fontsize=18)
     
     # Invert y-axis so 0.01 is at bottom
     ax.invert_yaxis()
     
-    ax.set_xlabel(r'$Z_{\mathrm{LAIu}}$', fontsize=12)
-    ax.set_ylabel(r'$Z_{\mathrm{LAI}}$', fontsize=12)
+    ax.set_xlabel(r'$Z_{\mathrm{LAIu}}$', fontsize=20)
+    ax.set_ylabel(r'$Z_{\mathrm{LAI}}$', fontsize=20)
+
+    # add padding to the x and y labels
+    ax.xaxis.labelpad = 5
+    ax.yaxis.labelpad = 5
     
     label = BAND_LABELS[band_name]
     ax.set_title(fr'$X_{{\mathrm{{{label}}}}}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})', 
-                fontsize=13, fontweight='bold', pad=10)
+                fontsize=18, fontweight='bold', pad=8)
     
-    # Get colorbar and set label
+    # ===== COLORBAR CONFIGURATION FOR REFLECTANCE PLOTS =====
+    # Get the colorbar object from the heatmap
     cbar = ax.collections[0].colorbar
-    cbar.set_label(fr'$X_{{\mathrm{{{label}}}}}$', fontsize=10)
+    
+    # Set colorbar label to show reflectance as percentage
+    # cbar.set_label('Reflectance (%)', fontsize=18)
+    
+    # Set font size of colorbar tick labels
+    cbar.ax.tick_params(labelsize=18)
+    
+    # Format tick labels: multiply by 100 to convert from fraction (0-1) to percentage (0-100)
+    # Use a formatter function to preserve colorbar size (same approach as gradient plots)
+    # This ensures the colorbar maintains its original aspect ratio and matches gradient plots
+    def percentage_formatter(x, p):
+        """Format tick labels as percentages (multiply by 100)"""
+        # return f'{x*100:.1f}'
+        return f'{x*100:.0f}'
+    
+    # Apply the formatter to the colorbar axis (preserves colorbar size)
+    cbar.ax.yaxis.set_major_formatter(FuncFormatter(percentage_formatter))
     
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
@@ -375,6 +399,33 @@ def compute_global_scales_per_band(all_gradients_raw, all_gradients_std):
         scales_std[b] = (vmin_std, vmax_std)
     
     return scales_raw, scales_std
+
+
+def compute_global_reflectance_scales_per_band(all_spectra):
+    """
+    Compute global vmin/vmax for reflectance for each band across all fc values.
+    
+    Args:
+        all_spectra: dict {fc: array of shape (n_lai, n_laiu, n_bands)}
+    
+    Returns:
+        scales_refl: dict {band_idx: (vmin, vmax)}
+    """
+    n_bands = len(S2_BANDS_USED)
+    scales_refl = {}
+    
+    for b in range(n_bands):
+        # Combine reflectance values across all fc values
+        all_vals = []
+        for spectra in all_spectra.values():
+            all_vals.append(spectra[:, :, b].flatten())
+        all_vals = np.concatenate(all_vals)
+        
+        vmin_refl = np.nanmin(all_vals)
+        vmax_refl = np.nanmax(all_vals)
+        scales_refl[b] = (vmin_refl, vmax_refl)
+    
+    return scales_refl
 
 
 def save_metrics_report(output_dir, grad_lai_raw, grad_laiu_raw, 
@@ -528,6 +579,7 @@ def main():
     # Compute global scales for each band
     print("\nComputing global scales across all bands and fc values...")
     scales_raw, scales_std = compute_global_scales_per_band(all_gradients_raw, all_gradients_std)
+    scales_refl = compute_global_reflectance_scales_per_band(all_spectra)
     
     # PASS 2: Generate all plots with consistent scales
     print(f"\n{'='*80}")
@@ -550,12 +602,14 @@ def main():
         
         # Generate plots
         for b, band in enumerate(S2_BANDS_USED):
-            # Reflectance
-            plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, b, band, fc, refl_dir)
-            
             # Get global scales for this band
             vmin_raw, vmax_raw = scales_raw[b]
             vmin_std, vmax_std = scales_std[b]
+            vmin_refl, vmax_refl = scales_refl[b]
+            
+            # Reflectance
+            plot_reflectance_heatmap(spectra, lai_vals, laiu_vals, b, band, fc, refl_dir,
+                                   vmin_global=vmin_refl, vmax_global=vmax_refl)
             
             # Raw gradients
             plot_gradient_heatmap_reference_style(

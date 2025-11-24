@@ -78,7 +78,7 @@ def kalman_filter(data, alpha=0.002):
 
 # %%
 # BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/'
-BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_B_SMPL/1029_143622/models'
+BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930_rank4/models'
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi/0509_103601_smooth'
 # TODO add comparison results for wosmooth case in appendix
 # BASE_PATH = '/maps/ys611/ai-refined-rtm/saved/mogi/models/AE_Mogi_corr/0509_103248_wosmooth'
@@ -277,13 +277,23 @@ for i, attr in enumerate(ATTRS.keys()):
         INFLATION_START, INFLATION_END,
         color='pink', alpha=0.4
     )
+    # Add benchmark horizontal lines
+    # if attr == 'xcen':
+    #     ax.axhline(y=-1.5, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    # elif attr == 'ycen':
+    #     ax.axhline(y=1.6, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    # elif attr == 'd':
+    #     ax.axhline(y=8, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    # elif attr == 'dV':
+    #     ax.axhline(y=4, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    
     sns.scatterplot(
-        x='date', y=f'latent_{attr}', data=df, ax=ax, s=8, alpha=0.8, color='blue'
+        x='date', y=f'latent_{attr}', data=df, ax=ax, s=15, alpha=0.5, color='purple'
     )
     # plot the fitted curve for only dV
     smooth_state_means = kalman_filter(
         df[f'latent_{attr}'].values, alpha=0.002)
-    ax.plot(df['date'], smooth_state_means, color='red', linewidth=2)
+    ax.plot(df['date'], smooth_state_means, color='red', linewidth=3)
 
     fontsize = 32
     # ax.set_title(attr, fontsize=fontsize)
@@ -297,8 +307,167 @@ for i, attr in enumerate(ATTRS.keys()):
         tick.set_rotation(-20)
     
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'latent_vars_date.png'))
+# plt.savefig(os.path.join(SAVE_PATH, 'latent_vars_date.png'))
 plt.show()
+
+# %%
+# Compare kalman filter lines from two models (PILA and HVAE)
+# Load data from both models
+SMPL_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_C_SMPL/1016_191930_rank4/models'
+BASELINE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_C/1016_192308/models'
+
+CSV_PATH_SMPL = os.path.join(SMPL_PATH, 'model_best_testset_analyzer.csv')
+CSV_PATH_BASELINE = os.path.join(BASELINE_PATH, 'model_best_testset_analyzer.csv')
+
+df_smpl = recale_output(pd.read_csv(CSV_PATH_SMPL), MEAN, SCALE)
+df_baseline = recale_output(pd.read_csv(CSV_PATH_BASELINE), MEAN, SCALE)
+
+df_smpl['date'] = pd.to_datetime(df_smpl['date'], format='%Y.%m.%d')
+df_baseline['date'] = pd.to_datetime(df_baseline['date'], format='%Y.%m.%d')
+
+fig, axs = plt.subplots(2, 2, figsize=(20, 8))
+for i, attr in enumerate(ATTRS.keys()):
+    ax = axs[i//2, i % 2]
+    # plot the background of the plot as grey for date between 2008-02-01 to 2008-07-01
+    ax.axvspan(
+        INFLATION_START, INFLATION_END,
+        color='pink', alpha=0.4
+    )
+    # Add benchmark horizontal lines (dotted)
+    if attr == 'xcen':
+        ax.axhline(y=-1.5, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    elif attr == 'ycen':
+        ax.axhline(y=1.6, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    elif attr == 'd':
+        ax.axhline(y=8, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    elif attr == 'dV':
+        ax.axhline(y=4, color='red', linestyle='--', linewidth=2, alpha=1.0)
+    
+    # Plot kalman filter lines for both models
+    smooth_state_means_smpl = kalman_filter(
+        df_smpl[f'latent_{attr}'].values, alpha=0.002)
+    smooth_state_means_baseline = kalman_filter(
+        df_baseline[f'latent_{attr}'].values, alpha=0.002)
+    
+    ax.plot(df_baseline['date'], smooth_state_means_baseline, color='red', linewidth=3)
+    ax.plot(df_smpl['date'], smooth_state_means_smpl, color='blue', linewidth=3.5)
+
+    # Set y-axis limits based on min and max of fitted curves
+    y_min = min(np.min(smooth_state_means_smpl), np.min(smooth_state_means_baseline))
+    y_max = max(np.max(smooth_state_means_smpl), np.max(smooth_state_means_baseline))
+    y_range = y_max - y_min
+    # Add 30% padding on both sides
+    ax.set_ylim(y_min - 0.3 * y_range, y_max + 0.3 * y_range)
+
+    fontsize = 32
+    # ax.set_title(attr, fontsize=fontsize)
+    ax.set_xlabel('Date', fontsize=fontsize)
+    # show only years for Date
+    ax.set_ylabel(ATTRS[attr], fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=25) #25
+    # rotate the x-axis labels
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(-20)
+    
+plt.tight_layout()
+# plt.savefig(os.path.join(SAVE_PATH, 'latent_vars_date_comparison.png'))
+plt.show()
+
+# Calculate and save statistics for the inflation period (using fitted Kalman filter curves and raw predictions)
+# Create lists to store statistics for both fitted curves and raw predictions
+stats_data_fitted = []
+stats_data_raw = []
+
+for attr in ATTRS.keys():
+    # Apply Kalman filter to full datasets for fitted curve statistics
+    smooth_state_means_smpl = kalman_filter(
+        df_smpl[f'latent_{attr}'].values, alpha=0.002)
+    smooth_state_means_baseline = kalman_filter(
+        df_baseline[f'latent_{attr}'].values, alpha=0.002)
+    
+    # Create temporary dataframes with fitted values
+    df_smpl_fitted = df_smpl.copy()
+    df_smpl_fitted[f'fitted_{attr}'] = smooth_state_means_smpl
+    df_baseline_fitted = df_baseline.copy()
+    df_baseline_fitted[f'fitted_{attr}'] = smooth_state_means_baseline
+    
+    # Filter to only include dates within the inflation period
+    df_smpl_inflation = df_smpl_fitted[(df_smpl_fitted['date'] >= INFLATION_START) & (df_smpl_fitted['date'] <= INFLATION_END)]
+    df_baseline_inflation = df_baseline_fitted[(df_baseline_fitted['date'] >= INFLATION_START) & (df_baseline_fitted['date'] <= INFLATION_END)]
+    
+    # Get fitted curve values for both models within inflation period
+    smpl_fitted_values = df_smpl_inflation[f'fitted_{attr}'].values
+    baseline_fitted_values = df_baseline_inflation[f'fitted_{attr}'].values
+    
+    # Get raw prediction values for both models within inflation period
+    smpl_raw_values = df_smpl_inflation[f'latent_{attr}'].values
+    baseline_raw_values = df_baseline_inflation[f'latent_{attr}'].values
+    
+    # Calculate statistics for PILA model (fitted curve)
+    stats_data_fitted.append({
+        'Variable': attr,
+        'Model': 'PILA',
+        'Min': np.min(smpl_fitted_values),
+        'Max': np.max(smpl_fitted_values),
+        'Mean': np.mean(smpl_fitted_values),
+        'Std': np.std(smpl_fitted_values),
+        'Period_Start': INFLATION_START.strftime('%Y-%m-%d'),
+        'Period_End': INFLATION_END.strftime('%Y-%m-%d')
+    })
+    
+    # Calculate statistics for HVAE model (fitted curve)
+    stats_data_fitted.append({
+        'Variable': attr,
+        'Model': 'HVAE',
+        'Min': np.min(baseline_fitted_values),
+        'Max': np.max(baseline_fitted_values),
+        'Mean': np.mean(baseline_fitted_values),
+        'Std': np.std(baseline_fitted_values),
+        'Period_Start': INFLATION_START.strftime('%Y-%m-%d'),
+        'Period_End': INFLATION_END.strftime('%Y-%m-%d')
+    })
+    
+    # Calculate statistics for PILA model (raw predictions)
+    stats_data_raw.append({
+        'Variable': attr,
+        'Model': 'PILA',
+        'Min': np.min(smpl_raw_values),
+        'Max': np.max(smpl_raw_values),
+        'Mean': np.mean(smpl_raw_values),
+        'Std': np.std(smpl_raw_values),
+        'Period_Start': INFLATION_START.strftime('%Y-%m-%d'),
+        'Period_End': INFLATION_END.strftime('%Y-%m-%d')
+    })
+    
+    # Calculate statistics for HVAE model (raw predictions)
+    stats_data_raw.append({
+        'Variable': attr,
+        'Model': 'HVAE',
+        'Min': np.min(baseline_raw_values),
+        'Max': np.max(baseline_raw_values),
+        'Mean': np.mean(baseline_raw_values),
+        'Std': np.std(baseline_raw_values),
+        'Period_Start': INFLATION_START.strftime('%Y-%m-%d'),
+        'Period_End': INFLATION_END.strftime('%Y-%m-%d')
+    })
+
+# Convert to DataFrames and save as CSV files
+stats_df_fitted = pd.DataFrame(stats_data_fitted)
+stats_df_raw = pd.DataFrame(stats_data_raw)
+
+# Use the SAVE_PATH from the comparison models
+SAVE_PATH_COMPARISON = os.path.join(SMPL_PATH, 'plots')
+if not os.path.exists(SAVE_PATH_COMPARISON):
+    os.makedirs(SAVE_PATH_COMPARISON)
+
+stats_csv_path_fitted = os.path.join(SAVE_PATH_COMPARISON, 'latent_vars_inflation_period_stats_fitted.csv')
+stats_csv_path_raw = os.path.join(SAVE_PATH_COMPARISON, 'latent_vars_inflation_period_stats_raw.csv')
+
+stats_df_fitted.to_csv(stats_csv_path_fitted, index=False)
+stats_df_raw.to_csv(stats_csv_path_raw, index=False)
+
+print(f"Fitted curve statistics saved to: {stats_csv_path_fitted}")
+print(f"Raw prediction statistics saved to: {stats_csv_path_raw}")
 
 
 # %%

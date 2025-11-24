@@ -572,6 +572,7 @@ for dataset_name in stats_dict:
 #     pd.DataFrame(rows).to_csv(os.path.join(SAVE_PATH, 'timeseries_statistics.csv'), index=False)
 
 print(f"Statistics saved to {os.path.join(SAVE_PATH, 'timeseries_statistics.csv')}")
+
 # %%
 """
 Kernel Density Estimation (KDE) plots for normalized residuals (y_hat_norm - y_norm)
@@ -631,6 +632,8 @@ def calculate_residuals(df_dataset, attr, date, insitu_attr, df_insitu, rtm_para
     # Normalize to [0, 1]
     y_norm = (insitu_clean - y_min) / (y_max - y_min)
     y_hat_norm = (pred_clean - y_min) / (y_max - y_min)
+    # y_norm = insitu_clean
+    # y_hat_norm = pred_clean
     
     # Calculate residuals: y_hat_norm - y_norm (prediction - measurement)
     residuals = y_hat_norm - y_norm
@@ -639,12 +642,30 @@ def calculate_residuals(df_dataset, attr, date, insitu_attr, df_insitu, rtm_para
 
 # Create a separate figure for each variable
 for attr in ['cab', 'fc', 'LAI', 'LAIu']:
+# for attr in ['LAI']:
     insitu_attr = ATTRS_INSITU[attr]
     if insitu_attr not in df_insitu.columns:
         continue
     
+    # First pass: collect all residuals across all dates to determine common x-axis range
+    all_residuals_all_dates = []
+    for date in dates:
+        residuals_smpl = calculate_residuals(df_insitu_sites_smpl, attr, date, insitu_attr, df_insitu, rtm_paras)
+        residuals_pvae = calculate_residuals(df_insitu_sites_pvae, attr, date, insitu_attr, df_insitu, rtm_paras)
+        
+        if residuals_smpl is not None:
+            all_residuals_all_dates.extend(residuals_smpl)
+        if residuals_pvae is not None:
+            all_residuals_all_dates.extend(residuals_pvae)
+    
+    # Calculate common x-axis range for all dates
+    if len(all_residuals_all_dates) == 0:
+        continue
+    
+    common_x_range = np.max(np.abs(all_residuals_all_dates)) * 1.2
+    
     # Create figure with 1 row, 4 columns (one for each date)
-    fig, axs = plt.subplots(1, 4, figsize=(24, 5))
+    fig, axs = plt.subplots(1, 4, figsize=(26, 5))
     
     # Loop through each date
     for j, date in enumerate(dates):
@@ -658,50 +679,83 @@ for attr in ['cab', 'fc', 'LAI', 'LAIu']:
             ax.axis('off')
             continue
         
-        # Determine x-axis range from both models
-        all_residuals = []
-        if residuals_smpl is not None:
-            all_residuals.extend(residuals_smpl)
-        if residuals_pvae is not None:
-            all_residuals.extend(residuals_pvae)
-        
-        if len(all_residuals) == 0:
+        if (residuals_smpl is None or len(residuals_smpl) == 0) and (residuals_pvae is None or len(residuals_pvae) == 0):
             ax.axis('off')
             continue
         
-        x_range = np.max(np.abs(all_residuals)) * 1.2
+        # Use the common x-axis range for all subplots
+        x_range = common_x_range
         
-        # Plot KDE for SMPL model (blue, "ours")
-        if residuals_smpl is not None and len(residuals_smpl) > 1:
-            sns.kdeplot(data=residuals_smpl, ax=ax, fill=True, alpha=0.5, color='blue', 
-                       linewidth=2, label='ours')
+        # Calculate MAE for both models
+        mae_smpl = None
+        mae_pvae = None
+        if residuals_smpl is not None and len(residuals_smpl) > 0:
+            mae_smpl = np.mean(np.abs(residuals_smpl))
+        if residuals_pvae is not None and len(residuals_pvae) > 0:
+            mae_pvae = np.mean(np.abs(residuals_pvae))
         
-        # Plot KDE for PVAE model (red, "PVAE")
+        # Plot KDE for PVAE model (red, "PVAE") - plot first so "ours" is on top
         if residuals_pvae is not None and len(residuals_pvae) > 1:
             sns.kdeplot(data=residuals_pvae, ax=ax, fill=True, alpha=0.5, color='red', 
-                       linewidth=2, label='PVAE')
+                       linewidth=2, zorder=1)
+        
+        # Plot KDE for SMPL model (blue, "ours") - plot last with higher z-order to bring to front
+        if residuals_smpl is not None and len(residuals_smpl) > 1:
+            sns.kdeplot(data=residuals_smpl, ax=ax, fill=True, alpha=0.5, color='blue', 
+                       linewidth=2, zorder=2)
         
         # Add vertical line at 0
-        ax.axvline(x=0, color='black', linestyle='--', linewidth=1.5, alpha=0.7, zorder=0)
+        ax.axvline(x=0, color='red', linestyle='--', linewidth=2.0, alpha=1.0, zorder=0)
         
         # Set x-axis limits to center around 0
         ax.set_xlim(-x_range, x_range)
         
         # Formatting
-        fontsize = 18
-        if j == 0:  # Leftmost column
-            ax.set_ylabel('Density', fontsize=fontsize)
-        ax.set_xlabel('Normalized Residual', fontsize=fontsize)
-        ax.set_title(date, fontsize=fontsize)
-        ax.tick_params(axis='both', which='major', labelsize=14)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=12, loc='upper right')
+        fontsize = 30
+        # if j == 0:  # Leftmost column
+        ax.set_ylabel('Density', fontsize=fontsize)
+        ax.set_xlabel('Prediction Error', fontsize=fontsize)
+        # ax.set_title(date, fontsize=fontsize)
+        ax.tick_params(axis='both', which='major', labelsize=25)
+        # Format y-axis labels to 1 decimal place
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '{:.1f}'.format(x)))
+        # ax.grid(True, alpha=0.5)
+        ax.grid(False)
+        ax.yaxis.labelpad = 10
+        
+        # Add MAE as colored text annotations
+        # Position text in upper left corner except for LAI
+        if attr == 'LAI':
+            text_y_pos = 0.95
+            text_x_pos = 0.54
+        else:
+            text_y_pos = 0.95
+            text_x_pos = 0.02
+        
+        # First row: "MAE" in black
+        # ax.text(text_x_pos, text_y_pos, 'MAE', 
+        #        transform=ax.transAxes, fontsize=12, color='black', 
+        #        verticalalignment='top', weight='bold')
+        # text_y_pos -= 0.08
+        
+        # Second row: "PVAE: X.XXX" in red
+        if residuals_pvae is not None and len(residuals_pvae) > 1 and mae_pvae is not None:
+            ax.text(text_x_pos, text_y_pos, f'HVAE: {mae_pvae:.3f}', 
+                   transform=ax.transAxes, fontsize=23, color='red', 
+                   verticalalignment='top', weight='bold')
+            text_y_pos -= 0.11
+        
+        # Third row: "Ours: X.XXX" in blue
+        if residuals_smpl is not None and len(residuals_smpl) > 1 and mae_smpl is not None:
+            ax.text(text_x_pos, text_y_pos, f'PILA: {mae_smpl:.3f}', 
+                   transform=ax.transAxes, fontsize=23, color='blue', 
+                   verticalalignment='top', weight='bold')
     
     # Add overall title for the variable
-    fig.suptitle(f'KDE of Normalized Residuals: {ATTRS_LATEX[attr]}', fontsize=22, y=1.02)
+    # fig.suptitle(f'KDE_Normalized_Residuals_{ATTRS_LATEX[attr]}', fontsize=22, y=1.02)
     
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, f'kde_residuals_normalized_{attr}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(SAVE_PATH, f'kde_absoluate_error_normalized_{attr}.png'), dpi=300, bbox_inches='tight')
     plt.show()
 
 # %%
