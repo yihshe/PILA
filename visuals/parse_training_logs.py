@@ -10,24 +10,20 @@ from pathlib import Path
 # %%
 # Set the log file path
 # Example: '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/log/info.log'
-LOG_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/log/info.log'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135'
+# BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1'
+LOG_PATH = os.path.join(BASE_PATH, 'log/info.log')
 
 # Derive the models directory from the log path
 # Log path structure: saved/{model_type}/{model_name}/{timestamp}/log/info.log
 # Models directory: saved/{model_type}/{model_name}/{timestamp}/models/
 log_path_obj = Path(LOG_PATH).resolve()
-BASE_PATH = log_path_obj.parent.parent / 'models'
-SAVE_PATH = BASE_PATH / 'plots'
+SAVE_PATH = Path(BASE_PATH) / 'models' / 'plots'
 
 # Create plots directory if it doesn't exist
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
-print(f"Log file: {LOG_PATH}")
-print(f"Base path: {BASE_PATH}")
-print(f"Save path: {SAVE_PATH}")
-
-# %%
 def parse_log_file(log_path):
     """
     Parse the training log file and extract per-epoch metrics.
@@ -49,19 +45,12 @@ def parse_log_file(log_path):
         
         # Look for the epoch summary section
         # Pattern: "Validation Epoch: X Rec Loss: Y KL Loss: Z"
-        val_match = re.search(r'Validation Epoch:\s+(\d+)\s+Rec Loss:\s+([\d.]+)\s+KL Loss:\s+([\d.]+)', line)
+        # We use this line only as a marker - all metrics are in the detailed entries below
+        val_match = re.search(r'Validation Epoch:\s+(\d+)', line)
         
         if val_match:
-            epoch_num = int(val_match.group(1))
-            val_rec_loss = float(val_match.group(2))
-            val_kl_loss = float(val_match.group(3))
-            
-            # The next lines should contain the epoch summary
-            epoch_data = {
-                'epoch': epoch_num,
-                'val_rec_loss': val_rec_loss,
-                'val_kl_loss': val_kl_loss
-            }
+            # Initialize empty epoch_data - we'll populate it from the detailed entries
+            epoch_data = {}
             
             # Parse the following lines for detailed metrics
             i += 1
@@ -93,7 +82,9 @@ def parse_log_file(log_path):
                 
                 i += 1
             
-            epochs_data.append(epoch_data)
+            # Only append if we found at least the epoch number
+            if 'epoch' in epoch_data:
+                epochs_data.append(epoch_data)
         else:
             i += 1
     
@@ -109,7 +100,6 @@ if not epochs_data:
 else:
     print(f"Found {len(epochs_data)} epochs")
 
-# %%
 # Save to CSV
 CSV_PATH = os.path.join(SAVE_PATH, 'training_metrics.csv')
 
@@ -143,7 +133,9 @@ print(df.columns.tolist())
 # %%
 # Plot individual metrics
 # Specify which metrics to plot
-METRICS_TO_PLOT = ['loss', 'rec_loss', 'kl_loss', 'val_loss', 'val_kl_loss']
+# METRICS_TO_PLOT = ['loss', 'rec_loss', 'kl_loss', 'unmix_loss', 'syn_data_loss', 'least_act_loss', 'val_loss', 'val_kl_loss'] #HVAE
+# METRICS_TO_PLOT = ['loss', 'rec_loss', 'ortho_penalty', 'edge_penalty', 'val_rec_loss', 'val_residual_loss'] #PILA
+METRICS_TO_PLOT = ['loss'] #SMPL
 # Or plot all available metrics (except epoch):
 # METRICS_TO_PLOT = [col for col in df.columns if col != 'epoch']
 
@@ -158,15 +150,17 @@ if missing_metrics:
 for metric in available_metrics:
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.plot(df['epoch'], df[metric], marker='o', markersize=4, linewidth=2)
-    ax.set_xlabel('Epoch', fontsize=14)
-    ax.set_ylabel(metric.replace('_', ' ').title(), fontsize=14)
-    ax.set_title(f'{metric.replace("_", " ").title()} vs Epoch', fontsize=16)
+    fontsize = 32
+    ax.set_xlabel('Epoch', fontsize=fontsize)
+    ax.set_ylabel(metric.replace('_', ' ').title(), fontsize=fontsize)
+    ax.set_title(f'{metric.replace("_", " ").title()} vs Epoch', fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid(True, alpha=0.3)
     
     # Save individual plot
-    plot_filename = f'{metric}_convergence.png'
+    plot_filename = f'convergence_plot_{metric}.png'
     plot_path = os.path.join(SAVE_PATH, plot_filename)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    # plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     print(f"Saved plot: {plot_path}")
     plt.show()
 
