@@ -235,9 +235,12 @@ def plot_gradient_heatmap_reference_style(grad_data, lai_vals, laiu_vals,
     # Build title NOTE edit
     z_var = f'Z_{{\mathrm{{{param_name}}}}}'
     x_var = f'X_{{\mathrm{{{label}}}}}'
+
+    z_var_fixed = f'Z_{{\mathrm{{LAIu}}}}' if param_name == 'LAI' else f'Z_{{\mathrm{{LAI}}}}'
     
     if is_standardized:
-        title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
+        # title = fr'$\partial {x_var} / \partial {z_var}$ ($Z_{{\mathrm{{fc}}}}$={fc_value:.1f})'
+        title = fr'$(\partial {x_var} / \partial {z_var}) \mid {z_var_fixed}, Z_{{\mathrm{{fc}}}}={fc_value:.1f}$'
         # Add mean value to upper right corner
         ax.text(
             0.95, 0.05, 

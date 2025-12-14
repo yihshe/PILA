@@ -9,9 +9,8 @@ from pathlib import Path
 
 # %%
 # Set the log file path
-# Example: '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135/log/info.log'
-BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135'
-# BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1'
+# BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA/1016_202135'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1'
 LOG_PATH = os.path.join(BASE_PATH, 'log/info.log')
 
 # Derive the models directory from the log path
@@ -130,12 +129,12 @@ df = pd.read_csv(CSV_PATH)
 print("Available metrics:")
 print(df.columns.tolist())
 
-# %%
+#%%
 # Plot individual metrics
 # Specify which metrics to plot
 # METRICS_TO_PLOT = ['loss', 'rec_loss', 'kl_loss', 'unmix_loss', 'syn_data_loss', 'least_act_loss', 'val_loss', 'val_kl_loss'] #HVAE
-# METRICS_TO_PLOT = ['loss', 'rec_loss', 'ortho_penalty', 'edge_penalty', 'val_rec_loss', 'val_residual_loss'] #PILA
-METRICS_TO_PLOT = ['loss'] #SMPL
+METRICS_TO_PLOT = ['loss', 'rec_loss', 'ortho_penalty', 'edge_penalty', 'val_rec_loss', 'val_residual_loss'] #PILA
+# METRICS_TO_PLOT = ['loss'] #TEST
 # Or plot all available metrics (except epoch):
 # METRICS_TO_PLOT = [col for col in df.columns if col != 'epoch']
 
@@ -150,18 +149,111 @@ if missing_metrics:
 for metric in available_metrics:
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.plot(df['epoch'], df[metric], marker='o', markersize=4, linewidth=2)
-    fontsize = 32
+    fontsize = 30
     ax.set_xlabel('Epoch', fontsize=fontsize)
-    ax.set_ylabel(metric.replace('_', ' ').title(), fontsize=fontsize)
-    ax.set_title(f'{metric.replace("_", " ").title()} vs Epoch', fontsize=fontsize)
+    ax.set_ylabel('Loss', fontsize=fontsize)
+    # Title with padding
+    # ax.set_title(f'{metric.replace("_", " ").title()}', fontsize=fontsize, pad=10)
     ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid(True, alpha=0.3)
     
     # Save individual plot
     plot_filename = f'convergence_plot_{metric}.png'
     plot_path = os.path.join(SAVE_PATH, plot_filename)
-    # plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     print(f"Saved plot: {plot_path}")
     plt.show()
+
+#%%
+# Plot loss curves from different ranks in one plot per metric
+# Base directory containing rank folders
+RANKS_BASE_PATH = '/maps/ys611/MAGIC/saved/mogi/PHYS_VAE_MOGI_C_SMPL'
+
+# Find all rank directories
+rank_dirs = []
+if os.path.exists(RANKS_BASE_PATH):
+    for item in os.listdir(RANKS_BASE_PATH):
+        item_path = os.path.join(RANKS_BASE_PATH, item)
+        if os.path.isdir(item_path) and 'rank' in item:
+            # Extract rank number from directory name
+            rank_match = re.search(r'rank(\d+)', item)
+            if rank_match:
+                rank_num = int(rank_match.group(1))
+                log_path = os.path.join(item_path, 'log', 'info.log')
+                if os.path.exists(log_path):
+                    rank_dirs.append((rank_num, item_path, log_path))
+    
+    # Sort by rank number
+    rank_dirs.sort(key=lambda x: x[0])
+    print(f"Found {len(rank_dirs)} rank directories: {[r[0] for r in rank_dirs]}")
+else:
+    print(f"Warning: Base path does not exist: {RANKS_BASE_PATH}")
+
+# Parse all rank log files
+all_rank_data = {}
+for rank_num, rank_dir, log_path in rank_dirs:
+    print(f"Parsing rank {rank_num}: {log_path}")
+    epochs_data = parse_log_file(log_path)
+    if epochs_data:
+        # Convert to DataFrame
+        rank_df = pd.DataFrame(epochs_data)
+        all_rank_data[rank_num] = rank_df
+        print(f"  Found {len(epochs_data)} epochs for rank {rank_num}")
+    else:
+        print(f"  Warning: No epoch data found for rank {rank_num}")
+
+# Determine which metrics to plot
+# Specify which metrics to plot (same as individual plots)
+METRICS_TO_PLOT_MULTI = ['loss', 'rec_loss', 'ortho_penalty', 'edge_penalty', 'val_rec_loss', 'val_residual_loss'] #PILA
+
+if all_rank_data:
+    # Get all available metrics across all ranks
+    all_metrics = set()
+    for rank_df in all_rank_data.values():
+        all_metrics.update(rank_df.columns)
+    all_metrics.discard('epoch')
+    
+    # Filter to only include metrics that exist in the dataframes
+    metrics_to_plot_multi = [m for m in METRICS_TO_PLOT_MULTI if m in all_metrics]
+    missing_metrics_multi = [m for m in METRICS_TO_PLOT_MULTI if m not in all_metrics]
+    
+    if missing_metrics_multi:
+        print(f"Warning: The following metrics were not found in the data: {missing_metrics_multi}")
+    
+    print(f"Plotting metrics: {metrics_to_plot_multi}")
+    
+    # Create save path for multi-rank plots
+    multi_rank_save_path = os.path.join(RANKS_BASE_PATH, 'multi_rank_plots')
+    if not os.path.exists(multi_rank_save_path):
+        os.makedirs(multi_rank_save_path)
+    
+    # Plot each metric with all ranks
+    for metric in metrics_to_plot_multi:
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        
+        # Plot each rank
+        for rank_num in sorted(all_rank_data.keys()):
+            rank_df = all_rank_data[rank_num]
+            if metric in rank_df.columns:
+                ax.plot(rank_df['epoch'], rank_df[metric], 
+                       marker='o', markersize=4, linewidth=2, 
+                       label=f'Rank {rank_num}')
+        
+        fontsize = 30
+        ax.set_xlabel('Epoch', fontsize=fontsize)
+        ax.set_ylabel('Loss', fontsize=fontsize)
+        ax.set_title(f'{metric.replace("_", " ").title()}', fontsize=fontsize, pad=10)
+        ax.tick_params(axis='both', which='major', labelsize=25)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=20, loc='best')
+        
+        # Save plot
+        plot_filename = f'multi_rank_convergence_{metric}.png'
+        plot_path = os.path.join(multi_rank_save_path, plot_filename)
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        print(f"Saved multi-rank plot: {plot_path}")
+        plt.show()
+else:
+    print("No rank data found to plot!")
 
 # %%

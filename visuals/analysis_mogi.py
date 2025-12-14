@@ -307,7 +307,7 @@ for i, attr in enumerate(ATTRS.keys()):
         tick.set_rotation(-20)
     
 plt.tight_layout()
-# plt.savefig(os.path.join(SAVE_PATH, 'latent_vars_date.png'))
+plt.savefig(os.path.join(SAVE_PATH, 'latent_vars_date.png'))
 plt.show()
 
 # %%
@@ -499,8 +499,8 @@ for direction in ['ux', 'uy', 'uz']:
         for tick in ax.get_xticklabels():
             tick.set_rotation(-20)
     plt.tight_layout()
-    plt.savefig(os.path.join(
-        SAVE_PATH, f'{direction}_target_v_finaloutput_gps_date.png'))
+    # plt.savefig(os.path.join(
+    #     SAVE_PATH, f'{direction}_target_v_finaloutput_gps_date.png'))
     plt.show()
 
 """
@@ -549,17 +549,17 @@ for i, direction in enumerate(['ux', 'uy', 'uz']):
             color='pink', alpha=0.4
         )
         gps = f'{direction}_{station}'
-        sns.scatterplot(
-            x='date', y=f'target_{gps}', data=df, ax=ax, s=15, alpha=0.5,
-            color='orange'
-        )
+        # sns.scatterplot(
+        #     x='date', y=f'target_{gps}', data=df, ax=ax, s=15, alpha=0.5,
+        #     color='orange'
+        # )
         sns.scatterplot(
             x='date', y=f'init_output_{gps}', data=df, ax=ax, s=15, alpha=0.5,
             color='blue'
         )
         # kalman filter to fit the curve for init_output
         smooth_init_output = kalman_filter(df[f'init_output_{gps}'].values, alpha=0.005)
-        ax.plot(df['date'], smooth_init_output, color='red', linewidth=2)
+        ax.plot(df['date'], smooth_init_output, color='red', linewidth=3)
 
         fontsize = 32
         ax.set_title(station, fontsize=fontsize)

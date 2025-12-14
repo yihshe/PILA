@@ -8,7 +8,7 @@ import os
 import json
 
 # %%
-BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_B_AUSTRIA_SMPL/1016_225547_no_residual/models'
+BASE_PATH = '/maps/ys611/MAGIC/saved/rtm/PHYS_VAE_RTM_C_AUSTRIA_SMPL/1016_181644_klp0_edge1/models'
 # TODO add VanillaAE and NNRegressor for analysis
 # CSV_PATH0 = os.path.join(
 #     BASE_PATH, 'rtm/models/PHYS_VAE_RTM_A_WYTHAM/0323_204514/model_best_testset_analyzer.csv')
@@ -206,13 +206,12 @@ ATTRS = list(rtm_paras.keys())
 # create one figure and plot both variable predictions of different models as a subplot
 
 # Plot only N, cw, cm, fc
-ATTRS = ['N', 'cw', 'cm', 'fc']
-# fig, axs = plt.subplots(2, 4, figsize=(26, 10))
-fig, axs = plt.subplots(1, 4, figsize=(26, 5))
+# ATTRS = ['N', 'cw', 'cm', 'fc']
+fig, axs = plt.subplots(2, 4, figsize=(26, 10))
+# fig, axs = plt.subplots(1, 4, figsize=(26, 5))
 
 for i, attr in enumerate(ATTRS):
-    # ax=axs[i//4, i % 4]
-    ax = axs[i]
+    ax=axs[i//4, i % 4]
     # ax = axs[i]
     sns.histplot(
         df_coniferous[f'latent_{attr}'].values,
@@ -240,10 +239,12 @@ for i, attr in enumerate(ATTRS):
     # set the distance between the y label and the y axis
     ax.yaxis.labelpad = 10
     ax.legend(fontsize=fontsize-5)
-# axs[-1, -1].axis('off')
+axs[-1, -1].axis('off')
 plt.tight_layout()
+# plt.savefig(os.path.join(
+#     SAVE_PATH, 'histogram_realset_vars_coniferous_v_deciduous_N_cw_cm_fc.png'), dpi=300)
 plt.savefig(os.path.join(
-    SAVE_PATH, 'histogram_realset_vars_coniferous_v_deciduous_N_cw_cm_fc.png'), dpi=300)
+    SAVE_PATH, 'histogram_realset_vars_coniferous_v_deciduous.png'), dpi=300)
 plt.show()
     
 
@@ -587,14 +588,14 @@ df = df2
 # color = 'red'
 color = 'blue'
 for token in ['output', 'init_output']:
-    # fig, axs = plt.subplots(3, 4, figsize=(24, 16))
-    fig, axs = plt.subplots(1, 4, figsize=(24, 6))
+    fig, axs = plt.subplots(3, 4, figsize=(24, 16))
+    # fig, axs = plt.subplots(1, 4, figsize=(24, 6))
     ylabel = '$X_{\mathrm{S2, C}}$' if token == 'output' else '$X_{\mathrm{S2, F}}$'
-    # for i, band in enumerate(S2_BANDS):
-        # ax = axs[i//4, i % 4]
-    bands = ['B02_BLUE', 'B04_RED', 'B08_NIR1', 'B11_SWI1']
-    for i, band in enumerate(bands):
-        ax = axs[i]
+    for i, band in enumerate(S2_BANDS):
+        ax = axs[i//4, i % 4]
+    # bands = ['B02_BLUE', 'B04_RED', 'B08_NIR1', 'B11_SWI1']
+    # for i, band in enumerate(bands):
+    #     ax = axs[i]
         sns.scatterplot(x='target_'+band, y=f'{token}_'+band, data=df, ax=ax,
                         s=8, alpha=0.5, color=color)
         # adjust the point size and alpha and color
@@ -633,9 +634,10 @@ for token in ['output', 'init_output']:
         # ax.legend([f'RMSE: {rmse:.3f}'], fontsize=24)
         ax.legend([f'$R^2$: {r2:.3f}'], fontsize=25)
     # make the last subplot empty
-    # axs[-1, -1].axis('off')
+    axs[-1, -1].axis('off')
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}_blue_red_nir1_swi1.png'))
+    # plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}_blue_red_nir1_swi1.png'))
+    plt.savefig(os.path.join(SAVE_PATH, f'linescatter_realset_bands_target_v_{token}.png'))
     plt.show()
 
 # %% NOTE neurips changed
@@ -899,7 +901,7 @@ for i, label in enumerate(ax.get_xticklabels()):
         label.set_color('blue')
 # save the heatmap
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_PATH, 'heatmap_jm_distance_realset_species_uniformed.png'), dpi=300)
+# plt.savefig(os.path.join(SAVE_PATH, 'heatmap_jm_distance_realset_species_uniformed.png'), dpi=300)
 plt.show()
 # %% NEW plot the time series of the mean and show the std as error bars for AE_RTM_corr
 df = df2
