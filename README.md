@@ -14,7 +14,7 @@ pip3 install -r requirements.txt
 
 ## Folder Structure
   ```
-MAGIC/
+PILA/
   │
   ├── train.py - main script to start training
   ├── test_AE_Mogi.py - evaluation of trained models for Mogi
