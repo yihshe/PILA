@@ -1,101 +1,140 @@
-# MAGIC: Modular Auto-encoder for Generalisable Model Inversion with Bias Corrections
-Scientists often model physical processes to understand the natural world and uncover the causation behind observations. Due to unavoidable simplification, discrepancies often arise between model predictions and actual observations, in the form of systematic biases, whose impact varies with model completeness. Classical model inversion methods such as Bayesian inference or regressive neural networks tend either to overlook biases or make assumptions about their nature during data preprocessing, potentially leading to implausible results. Inspired by recent work in inverse graphics, we replace the decoder stage of a standard autoencoder with a physical model followed by a bias-correction layer. This generalisable approach simultaneously inverts the model and corrects its biases in an end-to-end manner without making strong assumptions about the nature of the biases. We demonstrate the effectiveness of our approach using two physical models from disparate domains: a complex radiative transfer model from remote sensing; and a volcanic deformation model from geodesy. Our method matches or surpasses results from classical approaches without requiring biases to be explicitly filtered out, suggesting an effective pathway for understanding the causation of various physical processes.
+# PILA: Physics-Informed Low-Rank Augmentation for Interpretable Earth Observation
+Yihang She, Andrew Blake, Clement Atzberger, Adriano Gualandi, Srinivasan Keshav
 
-## Approach
-![Learning the inverse, end-to-end, in an encoder that includes correction layers $\mathbf{C}$](figures/model_flowchart.png)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-**Learning the inverse**, end-to-end, in an encoder that includes correction layers $\mathbf{C}$.
+Keywords: physics-informed machine learning, inverse problems, incomplete physical models, low-rank augmentation, Earth observation
 
-## Requirements
-To install requirements:
+This repository contains the code for PILA as described in:
+https://arxiv.org/abs/2405.18953 
+
+PILA stands for **Physics-Informed Low-Rank Augmentation**.
+
+PILA augments a forward physics model with a low-rank, learnable refinement
+to address model incompleteness during inversion.
+
+![Teaser figure](figures/intro_teaser_figure.png)
+*We study inverse problems arising from Earth observations of disparate physical processes, to understand the planet, from the surface to the subsurface. Study cases include: the inversion of a forest radiative transfer model---a planet renderer---to estimate biophysical status; and the inversion of a volcanic deformation model---representative of a broad family of geophysical inverse problems---to infer subsurface geophysical activity.*
+
+![PILA method diagram](figures/methods_pila.png)
+*PILA inverts physical models of varying incompleteness using a residual of intrinsically low rank. Given an observation X, E_R maps it to a high-dimensional feature R, which is then encoded by E_phy and E_aux into physical variables Z_phy and auxiliary variables Z_aux. Z_phy is decoded by F to produce a physical reconstruction X_F, which is refined by a low-rank residual Δ to yield the final reconstruction X_C. The residual Δ is computed by a mapping C as the product of a scaling factor s, a coefficient matrix A in R^{n x r}, and a residual basis matrix B in R^{d x r}, with rank(Δ) = r << d. Here, s and B are shared parameters applied to all samples, while A is obtained by linearly mapping the concatenation of Z_aux and the physical output X_F, with a stop-gradient operation applied to X_F during backpropagation.*
+
+## Key Components
+
+- **PILA (our method)**: `configs/phys_smpl/`, `train_pila.py`,
+  `model/model_phys_smpl.py`, `trainer/trainer_phys_smpl.py`
+
+We study two inversion problems:
+- **Mogi inversion** (GNSS)
+- **RTM inversion** (Austria and Wytham datasets)
+
+## Environment
+
+```bash
+./setup_environment.sh
 ```
-pip3 install -r requirements.txt
-```
 
-## Folder Structure
-  ```
-MAGIC/
-  │
-  ├── train.py - main script to start training
-  ├── test_AE_Mogi.py - evaluation of trained models for Mogi
-  ├── test_AE_RTM.py - evaluation of trained models for RTM
-  ├── test_NN_RTM.py -evaluation of trained models for RTM regressor baseline
-  │
-  ├── configs/ - holds configuration for training
-  │   ├── AE_Mogi_A.json - configuration file for training M_A_Mogi
-  │   ├── ...
-  │   ├── mogi_paras.json - learnable Mogi parameters with known ranges
-  │   ├── rtm_paras.json - learnable RTM parameters with known ranges
-  │   └── station_info.json - information of 12 GNSS stations
-  │
-  ├── parse_config.py - class to handle config file and cli options
-  │
-  ├── base/ - abstract base classes
-  │   ├── base_data_loader.py
-  │   ├── base_model.py
-  │   └── base_trainer.py
-  │
-  ├── data_loader/ - data loading for both Sentinel-2 and GNSS data
-  │   └── data_loaders.py
-  │
-  ├── data/ - default directory for storing input data
-  │   ├── processed/ - processed data ready for training and evaluation
-  │   └── raw/ - raw data 
-  │
-  ├── model/ - models, losses, and metrics
-  │   ├── model.py
-  │   ├── metric.py
-  │   └── loss.py
-  │
-  
-  │
-  ├── physics/ - Forward physical models
-│   ├── rtm/ - PyTorch implementation of RTM model
-│   ├── mogi/ - PyTorch implementation of Mogi model
-│   ├── rtm_numpy/ - NumPy implementation of RTM model
-│   └── dpm/ - DPM model implementation
-  │
-  ├── pretrained/ - pretrained models for evaluation
-  │
-  ├── saved/
-  │   ├── models/ - trained models are saved here
-  │   └── log/ - default logdir for tensorboard and logging output
-  │
-  ├── trainer/ - trainers
-  │   └── trainer.py
-  │
-  ├── logger/ - module for tensorboard visualization and logging
-  │   ├── visualization.py
-  │   ├── logger.py
-  │   └── logger_config.json
-  │  
-  └── utils/ - small utility functions
-      ├── util.py
-      └── rtm_unit_test.py - unit test for the PyTorch implementation of RTM
-  ```
+Or manually:
+
+```bash
+conda env create -f environment.yml
+conda activate pila
+```
 
 ## Training
-To train the models in the paper, run the following commands:
+
+PILA (our method):
+
+```bash
+python train_pila.py --config configs/phys_smpl/PILA_Mogi_C.json
+python train_pila.py --config configs/phys_smpl/PILA_RTM_C_austria.json
+python train_pila.py --config configs/phys_smpl/PILA_RTM_C_wytham.json
 ```
-cd MAGIC # change working directory to MAGIC
-./run_train.sh
-```
-Alternatively, a specific model e.g. $\mathbf{M}_{\mathrm{C, RTM}}$ can be trained using this command:
-```
-python3 train.py --config configs/AE_RTM_C.json
-```
-Please see run_train.sh for more examples. 
+
+See `run.sh` for additional examples.
 
 ## Evaluation
-To evaluate the pretrained models, run the following commands:
+
+```bash
+python test_pila_mogi.py \
+  --config saved/mogi/EXPERIMENT_NAME/MMDD_HHMMSS/models/config.json \
+  --resume saved/mogi/EXPERIMENT_NAME/MMDD_HHMMSS/models/model_best.pth
+
+python test_pila_rtm.py \
+  --config saved/rtm/EXPERIMENT_NAME/MMDD_HHMMSS/models/config.json \
+  --resume saved/rtm/EXPERIMENT_NAME/MMDD_HHMMSS/models/model_best.pth \
+  --insitu
 ```
-cd MAGIC # change working directory to MAGIC
-./run_eval.sh
+
+Equivalent HVAE commands are available in `run.sh`.
+
+## Baseline (HVAE)
+
+HVAE stands for **Hybrid Auto-Encoder** and is used as a baseline for
+comparison. For details, see Takeishi and Kalousis (2021):
+https://proceedings.neurips.cc/paper_files/paper/2021/file/7ca57a9f85a19a6e4b9a248c1daca185-Paper.pdf
+
+To reproduce the baseline:
+
+```bash
+python train_hvae.py --config configs/phys/HVAE_Mogi_C.json
+python train_hvae.py --config configs/phys/HVAE_RTM_C_austria.json
+python train_hvae.py --config configs/phys/HVAE_RTM_C_wytham.json
 ```
-Alternatively, a specific model e.g. $\mathbf{M}_{\mathrm{C, RTM}}$ can be evaluated using this command:
+
+## Configs and Variants
+
+Configs follow the A/B/C variants:
+- **A**: no physics (`no_phy: true`)
+- **B**: physics only (`dim_z_aux: 0`)
+- **C**: physics + refinement (PILA residual)
+
+PILA configs live in `configs/phys_smpl/`. HVAE configs live in `configs/phys/`.
+
+## Project Structure
+
 ```
-python3 test_AE_RTM.py \
-         --config pretrained/AE_RTM_C/config.json \
-         --resume pretrained/AE_RTM_C/model_best.pth
+PILA/
+├── base/                 # Base classes
+├── configs/              # Experiment configs
+│   ├── phys/             # HVAE configs
+│   └── phys_smpl/        # PILA configs
+├── data/                 # Data (see notes below)
+├── data_loader/          # Data loaders
+├── datasets/             # Dataset preprocessing utilities
+├── figures/              # Figures used in README/paper
+├── model/                # PILA/HVAE models, losses, metrics
+├── physics/              # Forward physics models (RTM, Mogi)
+├── pretrained/           # Pretrained checkpoints (to be updated)
+├── trainer/              # PILA/HVAE trainers
+├── utils/                # Utilities
+└── run.sh                # Example commands
 ```
-This will evaluate the MSE loss of the pretrained model on the test set and save the evaluation results for further analysis. Please see run_eval.sh for more examples. 
+
+## Data and Checkpoints
+
+- `data/` will be updated to include all datasets used in the paper.
+- Pretrained checkpoints will be added; key models will be shared via an
+  external link (to be provided).
+
+## Adding a New Physics Model
+
+1. Implement the forward model under `physics/your_model/`.
+2. Add a new config under `configs/phys_smpl/` (PILA).
+3. Update/extend the data loader if your input format changes.
+4. Train with `train_pila.py` or `train_hvae.py`.
+
+## Citation
+
+```bibtex
+@misc{she2025pilaphysicsinformedlowrank,
+      title={PILA: Physics-Informed Low Rank Augmentation for Interpretable Earth Observation},
+      author={Yihang She and Andrew Blake and Clement Atzberger and Adriano Gualandi and Srinivasan Keshav},
+      year={2025},
+      eprint={2405.18953},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2405.18953},
+}
+```

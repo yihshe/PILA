@@ -1,3 +1,10 @@
+"""
+HVAE baseline model (Hybrid Auto-Encoder).
+
+This module implements the baseline architecture used in the paper for
+comparison against PILA. It keeps the physics model in the decoder but
+does not include the PILA low-rank correction mechanisms.
+"""
 import os
 import numpy as np
 import torch

@@ -5,7 +5,6 @@ temp.py
 visuals/histogram_temp.py
 visuals/3dplots/
 visuals/allometry/
-run.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -117,6 +116,12 @@ saved_archived/
 wandb/
 data/raw/wytham
 data/processed/rtm/wytham/
+
+# Local-only experiment traces / DPM (not for GitHub)
+run_train_phys_smpl_sherwood.sh
+configs/phys_smpl/AE_DPM_*.json
+configs/dpm_paras.json
+physics/dpm/
 
 # Redundant files
 .nfs00000000017f6ee30001c665

@@ -1,30 +1,10 @@
 """
-Simplified version of PhysVAE for ablation study and model inversion framework.
+PILA model (physics-informed low-rank augmentation).
 
-This implementation provides a cleaner, more interpretable version of the original PhysVAE
-framework with the following key features:
+This implementation provides the PILA architecture used in the paper.
 
-1. **Simplified Architecture**: Removed unmixing path and complex components for clarity
-2. **U-space Representation**: Physics parameters are represented in u-space (unbounded) 
-   and transformed to z-space (0,1) via sigmoid
-3. **Additive Residual Correction**: Uses gated additive residual instead of complex 
-   multiplicative corrections
-4. **Two-stage Training**: 
-   - Stage A: Synthetic bootstrap for physics parameter learning
-   - Stage B: Full VAE training with KL divergence
-5. **Better Monitoring**: Enhanced logging and metrics for training stability
-
-Key Changes from Original:
-- KL divergence computed in u-space for physics parameters
-- Simplified decoder with explicit additive residual and gate
-- Removed unmixing path for cleaner ablation studies
-- Better initialization of gate parameters
-- Enhanced error handling and validation
-
-TODO:
-- Add more comprehensive ablation study configurations
-- Implement additional physics models beyond RTM
-- Add uncertainty quantification capabilities
+To extend PILA with a new physics model, implement it under `physics/` and
+create matching configs under `configs/phys_smpl/`.
 """
 import os
 import numpy as np
