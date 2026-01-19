@@ -21,7 +21,7 @@ PILA stands for **Physics-Informed Low-Rank Augmentation**. It augments a forwar
 - **PILA (our method)**: `configs/phys_smpl/`, `train_pila.py`,
   `model/model_phys_smpl.py`, `physics/`, `trainer/trainer_phys_smpl.py`
 
-We study two representative EO inverse problems:
+We study two representative EO inverse problems with PILA:
 - **Mogi inversion** from space geodesy to monitor volcanic activities (GNSS-monitored surface displacements from Akutan Volcano)
 - **RTM inversion** from optical remote sensing to understand forest dynamics (Sentinel-2 spectra from Austrian forest, and Wytham Wood, UK)
 
